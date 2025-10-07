@@ -145,7 +145,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     // Run inference
-    let input = backend.tensor_builder().from_vec(
+    let input = backend.tensor_builder().build_from_vec(
         vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         &[1, 10]
     )?;
@@ -352,8 +352,8 @@ Contributions are welcome! Please:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
+<!-- --- -->
+<!-- 
 <div align="center">
 Built with ❤️ by the InputLayer team
-</div>
+</div> -->

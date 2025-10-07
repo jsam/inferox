@@ -9,5 +9,5 @@ pub use backend::Backend;
 pub use device::{Device, DeviceId, MemoryInfo};
 pub use dtype::{DType, DataType, NumericType};
 pub use error::InferoxError;
-pub use model::{BatchedModel, Model, ModelMetadata, MemoryRequirements, SaveLoadModel};
+pub use model::{BatchedModel, MemoryRequirements, Model, ModelMetadata, SaveLoadModel};
 pub use tensor::{Tensor, TensorBuilder};

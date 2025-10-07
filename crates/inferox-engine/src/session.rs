@@ -1,5 +1,5 @@
-use inferox_core::{Backend, InferoxError};
 use crate::InferoxEngine;
+use inferox_core::{Backend, InferoxError};
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -28,19 +28,19 @@ impl<B: Backend> InferenceSession<B> {
             },
         }
     }
-    
+
     pub fn run(&mut self, input: B::Tensor) -> Result<B::Tensor, InferoxError<B::Error>> {
         self.engine.infer(&self.model_name, input)
     }
-    
+
     pub fn set_batch_size(&mut self, batch_size: usize) {
         self.context.batch_size = batch_size;
     }
-    
+
     pub fn store_state<T: Any + Send + Sync>(&mut self, key: String, value: T) {
         self.context.cache.insert(key, Box::new(value));
     }
-    
+
     pub fn get_state<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
         self.context.cache.get(key)?.downcast_ref()
     }

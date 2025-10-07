@@ -12,11 +12,11 @@ impl Device for CandleDeviceWrapper {
             CandleDevice::Metal(_) => DeviceId::Metal(0),
         }
     }
-    
+
     fn is_available(&self) -> bool {
         true
     }
-    
+
     fn memory_info(&self) -> Option<MemoryInfo> {
         None
     }

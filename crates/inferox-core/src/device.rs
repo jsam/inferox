@@ -15,8 +15,8 @@ pub struct MemoryInfo {
 
 pub trait Device: Clone + Send + Sync {
     fn id(&self) -> DeviceId;
-    
+
     fn is_available(&self) -> bool;
-    
+
     fn memory_info(&self) -> Option<MemoryInfo>;
 }
