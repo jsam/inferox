@@ -26,7 +26,7 @@ impl DataType for DType {
             DType::F16 => "f16",
         }
     }
-    
+
     fn size(&self) -> usize {
         match self {
             DType::F64 | DType::I64 => 8,
@@ -46,7 +46,7 @@ impl NumericType for f32 {
     fn dtype() -> DType {
         DType::F32
     }
-    
+
     fn as_f32_slice(data: &[Self]) -> Vec<f32> {
         data.to_vec()
     }
@@ -56,7 +56,7 @@ impl NumericType for f64 {
     fn dtype() -> DType {
         DType::F64
     }
-    
+
     fn as_f32_slice(data: &[Self]) -> Vec<f32> {
         data.iter().map(|&x| x as f32).collect()
     }
@@ -66,7 +66,7 @@ impl NumericType for i32 {
     fn dtype() -> DType {
         DType::I32
     }
-    
+
     fn as_f32_slice(data: &[Self]) -> Vec<f32> {
         data.iter().map(|&x| x as f32).collect()
     }
@@ -76,7 +76,7 @@ impl NumericType for i64 {
     fn dtype() -> DType {
         DType::I64
     }
-    
+
     fn as_f32_slice(data: &[Self]) -> Vec<f32> {
         data.iter().map(|&x| x as f32).collect()
     }
@@ -86,7 +86,7 @@ impl NumericType for u8 {
     fn dtype() -> DType {
         DType::U8
     }
-    
+
     fn as_f32_slice(data: &[Self]) -> Vec<f32> {
         data.iter().map(|&x| x as f32).collect()
     }

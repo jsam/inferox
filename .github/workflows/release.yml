@@ -1,0 +1,270 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.2.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Perform dry run only (do not publish)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  validate:
+    name: Pre-release Validation
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry/index
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-registry-
+    
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-release-
+    
+    - name: Run publish checks
+      run: make publish-check
+    
+    - name: Verify version matches
+      if: github.event_name == 'push'
+      run: |
+        CARGO_VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[] | select(.name == "inferox-core") | .version')
+        RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+        
+        echo "Cargo.toml version: $CARGO_VERSION"
+        echo "Git tag: $RELEASE_TAG"
+        
+        if [ "$CARGO_VERSION" != "$RELEASE_TAG" ]; then
+          echo "❌ Error: Version mismatch!"
+          echo "Cargo.toml version ($CARGO_VERSION) does not match git tag ($RELEASE_TAG)"
+          echo ""
+          echo "To fix this:"
+          echo "1. Update version in all Cargo.toml files to $RELEASE_TAG"
+          echo "2. Commit the change"
+          echo "3. Re-tag with: git tag -f $RELEASE_TAG"
+          exit 1
+        fi
+        
+        echo "✅ Version check passed"
+
+  publish:
+    name: Publish to crates.io
+    needs: validate
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry/index
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-registry-
+    
+    - name: Publish crates in order
+      run: |
+        echo "Publishing inferox-core..."
+        cd crates/inferox-core
+        cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        cd ../..
+        
+        echo "Waiting for inferox-core to be available..."
+        sleep 30
+        
+        echo "Publishing inferox-candle..."
+        cd crates/inferox-candle
+        cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        cd ../..
+        
+        echo "Waiting for inferox-candle to be available..."
+        sleep 30
+        
+        echo "Publishing inferox-engine..."
+        cd crates/inferox-engine
+        cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        cd ../..
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    
+    - name: Create publish summary
+      run: |
+        VERSION="${GITHUB_REF#refs/tags/}"
+        
+        echo "## 🚀 Published to crates.io" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version ${VERSION}** has been successfully published!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Installation" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`toml" >> $GITHUB_STEP_SUMMARY
+        echo "[dependencies]" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-core = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-candle = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-engine = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Links" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-core](https://crates.io/crates/inferox-core)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-candle](https://crates.io/crates/inferox-candle)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-engine](https://crates.io/crates/inferox-engine)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📚 [docs.rs/inferox-core/${VERSION}](https://docs.rs/inferox-core/${VERSION})" >> $GITHUB_STEP_SUMMARY
+
+  dry-run:
+    name: Publish Dry Run
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry/index
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-registry-
+    
+    - name: Run dry-run publish
+      run: make publish-dry-run
+    
+    - name: Display package contents
+      run: |
+        echo "## 📦 Package Contents" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### inferox-core" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        cd crates/inferox-core && cargo package --list >> $GITHUB_STEP_SUMMARY && cd ../..
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### inferox-candle" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        cd crates/inferox-candle && cargo package --list >> $GITHUB_STEP_SUMMARY && cd ../..
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### inferox-engine" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        cd crates/inferox-engine && cargo package --list >> $GITHUB_STEP_SUMMARY && cd ../..
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  update-docs:
+    name: Update Documentation
+    needs: publish
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Documentation summary
+      run: |
+        VERSION="${GITHUB_REF#refs/tags/}"
+        
+        echo "## 📚 Documentation Updated" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Documentation for version ${VERSION} is being built on docs.rs." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "It should be available within a few minutes:" >> $GITHUB_STEP_SUMMARY
+        echo "- https://docs.rs/inferox-core/${VERSION}" >> $GITHUB_STEP_SUMMARY
+        echo "- https://docs.rs/inferox-candle/${VERSION}" >> $GITHUB_STEP_SUMMARY
+        echo "- https://docs.rs/inferox-engine/${VERSION}" >> $GITHUB_STEP_SUMMARY
+
+  verify-published:
+    name: Verify Published Package
+    needs: publish
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Wait for crates.io to sync
+      run: sleep 60
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Verify packages are available
+      run: |
+        VERSION="${GITHUB_REF#refs/tags/}"
+        
+        echo "Checking if inferox crates ${VERSION} are available on crates.io..."
+        
+        for crate in inferox-core inferox-candle inferox-engine; do
+          if cargo search $crate --limit 1 | grep -q "$crate.*${VERSION}"; then
+            echo "✅ $crate successfully published and indexed on crates.io!"
+          else
+            echo "⚠️  $crate may still be indexing. Please check manually."
+          fi
+        done
+    
+    - name: Test installation
+      run: |
+        VERSION="${GITHUB_REF#refs/tags/}"
+        
+        cargo init --bin test-install
+        cd test-install
+        cargo add inferox-core@${VERSION} || echo "Package may still be syncing"
+        cargo add inferox-candle@${VERSION} || echo "Package may still be syncing"
+        cargo add inferox-engine@${VERSION} || echo "Package may still be syncing"
+
+  announce:
+    name: Announce Release
+    needs: [publish, verify-published]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && success()
+    steps:
+    - name: Create release summary
+      run: |
+        VERSION="${GITHUB_REF#refs/tags/}"
+        
+        echo "## 🎉 Release ${VERSION} Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Published Successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-core](https://crates.io/crates/inferox-core)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-candle](https://crates.io/crates/inferox-candle)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [crates.io/crates/inferox-engine](https://crates.io/crates/inferox-engine)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📚 [docs.rs/inferox-core/${VERSION}](https://docs.rs/inferox-core/${VERSION})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Installation" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`toml" >> $GITHUB_STEP_SUMMARY
+        echo "[dependencies]" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-core = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-candle = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "inferox-engine = \"${VERSION}\"" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### What's Next?" >> $GITHUB_STEP_SUMMARY
+        echo "- Documentation will be available on docs.rs within a few minutes" >> $GITHUB_STEP_SUMMARY
+        echo "- All CI checks passed ✅" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Thank you for using Inferox! 🚀" >> $GITHUB_STEP_SUMMARY

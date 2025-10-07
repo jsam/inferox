@@ -6,18 +6,18 @@ pub trait Model: Send + Sync {
     type Backend: Backend;
     type Input;
     type Output;
-    
+
     fn name(&self) -> &str;
-    
+
     fn forward(
         &self,
         input: Self::Input,
     ) -> Result<Self::Output, <Self::Backend as Backend>::Error>;
-    
+
     fn metadata(&self) -> ModelMetadata {
         ModelMetadata::default()
     }
-    
+
     fn memory_requirements(&self) -> MemoryRequirements {
         MemoryRequirements::default()
     }
@@ -46,14 +46,12 @@ pub trait BatchedModel: Model {
         &self,
         batch: Vec<Self::Input>,
     ) -> Result<Vec<Self::Output>, <Self::Backend as Backend>::Error> {
-        batch.into_iter()
-            .map(|input| self.forward(input))
-            .collect()
+        batch.into_iter().map(|input| self.forward(input)).collect()
     }
 }
 
 pub trait SaveLoadModel: Model {
     fn save(&self, path: &Path) -> Result<(), <Self::Backend as Backend>::Error>;
-    
+
     fn load(&mut self, path: &Path) -> Result<(), <Self::Backend as Backend>::Error>;
 }

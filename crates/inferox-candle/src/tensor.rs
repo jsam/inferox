@@ -1,6 +1,6 @@
-use candle_core::{Tensor as InternalTensor, DType as CandleDType};
-use inferox_core::{Tensor as TensorTrait, DataType};
 use crate::{CandleBackend, CandleDeviceWrapper};
+use candle_core::{DType as CandleDType, Tensor as InternalTensor};
+use inferox_core::{DataType, Tensor as TensorTrait};
 
 #[derive(Clone)]
 pub struct CandleTensor(pub InternalTensor);
@@ -20,7 +20,7 @@ impl DataType for CandleDTypeWrapper {
             CandleDType::F16 => "f16",
         }
     }
-    
+
     fn size(&self) -> usize {
         match self.0 {
             CandleDType::F64 | CandleDType::I64 => 8,
@@ -34,27 +34,27 @@ impl DataType for CandleDTypeWrapper {
 impl TensorTrait for CandleTensor {
     type Dtype = CandleDTypeWrapper;
     type Backend = CandleBackend;
-    
+
     fn shape(&self) -> &[usize] {
         self.0.dims()
     }
-    
+
     fn dtype(&self) -> Self::Dtype {
         CandleDTypeWrapper(self.0.dtype())
     }
-    
+
     fn device(&self) -> CandleDeviceWrapper {
         CandleDeviceWrapper(self.0.device().clone())
     }
-    
+
     fn to_device(&self, device: &CandleDeviceWrapper) -> Result<Self, candle_core::Error> {
         Ok(CandleTensor(self.0.to_device(&device.0)?))
     }
-    
+
     fn reshape(&self, shape: &[usize]) -> Result<Self, candle_core::Error> {
         Ok(CandleTensor(self.0.reshape(shape)?))
     }
-    
+
     fn contiguous(&self) -> Result<Self, candle_core::Error> {
         Ok(CandleTensor(self.0.contiguous()?))
     }

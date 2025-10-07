@@ -21,27 +21,30 @@ impl EngineConfig {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn with_max_batch_size(mut self, size: usize) -> Self {
         self.max_batch_size = size;
         self
     }
-    
+
     pub fn with_profiling(mut self, enable: bool) -> Self {
         self.enable_profiling = enable;
         self
     }
-    
+
     pub fn with_memory_pool_size(mut self, size: Option<usize>) -> Self {
         self.memory_pool_size = size;
         self
     }
 }
 
+type BoxedModel<B> =
+    Box<dyn Model<Backend = B, Input = <B as Backend>::Tensor, Output = <B as Backend>::Tensor>>;
+
 pub struct InferoxEngine<B: Backend> {
     backend: B,
-    models: HashMap<String, Box<dyn Model<Backend = B, Input = B::Tensor, Output = B::Tensor>>>,
-    config: EngineConfig,
+    models: HashMap<String, BoxedModel<B>>,
+    _config: EngineConfig,
 }
 
 impl<B: Backend> InferoxEngine<B> {
@@ -49,59 +52,67 @@ impl<B: Backend> InferoxEngine<B> {
         Self {
             backend,
             models: HashMap::new(),
-            config,
+            _config: config,
         }
     }
-    
-    pub fn register_model<M>(&mut self, model: M) 
+
+    pub fn register_model<M>(&mut self, model: M)
     where
         M: Model<Backend = B, Input = B::Tensor, Output = B::Tensor> + 'static,
     {
         let name = model.name().to_string();
         self.models.insert(name, Box::new(model));
     }
-    
-    pub fn register_boxed_model(&mut self, model: Box<dyn Model<Backend = B, Input = B::Tensor, Output = B::Tensor>>) {
+
+    pub fn register_boxed_model(
+        &mut self,
+        model: Box<dyn Model<Backend = B, Input = B::Tensor, Output = B::Tensor>>,
+    ) {
         let name = model.name().to_string();
         self.models.insert(name, model);
     }
-    
+
     pub fn infer(
         &self,
         model_name: &str,
         input: B::Tensor,
     ) -> Result<B::Tensor, InferoxError<B::Error>> {
-        let model = self.models.get(model_name)
+        let model = self
+            .models
+            .get(model_name)
             .ok_or_else(|| InferoxError::ModelNotFound(model_name.to_string()))?;
-        
-        model.forward(input)
-            .map_err(InferoxError::Backend)
+
+        model.forward(input).map_err(InferoxError::Backend)
     }
-    
+
     pub fn infer_batch(
         &self,
         model_name: &str,
         batch: Vec<B::Tensor>,
     ) -> Result<Vec<B::Tensor>, InferoxError<B::Error>> {
-        let model = self.models.get(model_name)
+        let model = self
+            .models
+            .get(model_name)
             .ok_or_else(|| InferoxError::ModelNotFound(model_name.to_string()))?;
-        
-        batch.into_iter()
+
+        batch
+            .into_iter()
             .map(|input| model.forward(input))
             .collect::<Result<Vec<_>, _>>()
             .map_err(InferoxError::Backend)
     }
-    
+
     pub fn list_models(&self) -> Vec<(&str, ModelMetadata)> {
-        self.models.iter()
+        self.models
+            .iter()
             .map(|(name, model)| (name.as_str(), model.metadata()))
             .collect()
     }
-    
+
     pub fn model_info(&self, model_name: &str) -> Option<ModelMetadata> {
         self.models.get(model_name).map(|m| m.metadata())
     }
-    
+
     pub fn backend(&self) -> &B {
         &self.backend
     }

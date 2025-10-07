@@ -1,7 +1,7 @@
 # Inferox Makefile
 # Provides convenient commands for testing, building, and development
 
-.PHONY: help build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example
+.PHONY: help build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example release-prepare publish-check publish-dry-run
 
 # Default target
 help:
@@ -42,6 +42,11 @@ help:
 	@echo "  ci              - Run all CI checks (lint + test)"
 	@echo "  ci-test         - Run CI tests"
 	@echo "  ci-lint         - Run CI linting"
+	@echo ""
+	@echo "Release:"
+	@echo "  release-prepare VERSION=x.y.z - Prepare release by updating versions"
+	@echo "  publish-check   - Run all pre-publish validation checks"
+	@echo "  publish-dry-run - Test publish without actually publishing"
 
 # Building commands
 build:
@@ -163,3 +168,73 @@ ci-lint:
 # All CI checks in one command
 ci: ci-lint ci-test
 	@echo "All CI checks passed!"
+
+# Release commands
+release-prepare:
+	@echo "Preparing release $(VERSION)..."
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ Error: VERSION not specified"; \
+		echo "Usage: make release-prepare VERSION=0.1.0"; \
+		exit 1; \
+	fi
+	@echo "Updating version to $(VERSION) in all Cargo.toml files..."
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' crates/inferox-core/Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' crates/inferox-candle/Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' crates/inferox-engine/Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' examples/mlp/Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' examples/mlp/models/classifier/Cargo.toml
+	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' examples/mlp/models/small/Cargo.toml
+	@find . -name "*.bak" -delete
+	@echo "✅ Version updated to $(VERSION)"
+	@echo ""
+	@echo "Next steps:"
+	@echo "1. Review changes: git diff"
+	@echo "2. Run checks: make publish-check"
+	@echo "3. Commit: git add . && git commit -m 'chore: bump version to $(VERSION)'"
+	@echo "4. Tag: git tag $(VERSION) && git push origin $(VERSION)"
+
+publish-check:
+	@echo "Running pre-publish checks..."
+	@echo ""
+	@echo "1. Checking format..."
+	@cargo fmt --check || (echo "❌ Format check failed! Run 'make format' first." && exit 1)
+	@echo "✅ Format check passed"
+	@echo ""
+	@echo "2. Running clippy..."
+	@cargo clippy --all-targets --all-features -- -D warnings || (echo "❌ Clippy failed!" && exit 1)
+	@echo "✅ Clippy passed"
+	@echo ""
+	@echo "3. Running tests..."
+	@cargo test --all-targets --all-features || (echo "❌ Tests failed!" && exit 1)
+	@echo "✅ Tests passed"
+	@echo ""
+	@echo "4. Building model libraries..."
+	@cargo build --release -p mlp-classifier -p mlp-small || (echo "❌ Model build failed!" && exit 1)
+	@echo "✅ Model libraries built"
+	@echo ""
+	@echo "5. Building documentation..."
+	@cargo doc --no-deps || (echo "❌ Documentation build failed!" && exit 1)
+	@echo "✅ Documentation built"
+	@echo ""
+	@echo "6. Checking package..."
+	@cd crates/inferox-core && cargo package --allow-dirty > /dev/null 2>&1 || (echo "❌ inferox-core package check failed!" && exit 1)
+	@cd crates/inferox-candle && cargo package --allow-dirty > /dev/null 2>&1 || (echo "❌ inferox-candle package check failed!" && exit 1)
+	@cd crates/inferox-engine && cargo package --allow-dirty > /dev/null 2>&1 || (echo "❌ inferox-engine package check failed!" && exit 1)
+	@echo "✅ Package checks passed"
+	@echo ""
+	@echo "✅ All publish checks passed! Ready to release."
+
+publish-dry-run:
+	@echo "Running dry-run publish..."
+	@echo ""
+	@echo "inferox-core:"
+	@cd crates/inferox-core && cargo publish --dry-run
+	@echo ""
+	@echo "inferox-candle:"
+	@cd crates/inferox-candle && cargo publish --dry-run
+	@echo ""
+	@echo "inferox-engine:"
+	@cd crates/inferox-engine && cargo publish --dry-run
+	@echo ""
+	@echo "✅ Dry-run completed successfully!"
