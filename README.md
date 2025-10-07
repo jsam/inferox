@@ -4,10 +4,13 @@
 
 **Safe, Fast, and Modular ML Inference Engine for Rust**
 
-[![CI](https://img.shields.io/github/actions/workflow/status/inputlayer/inferox/pr-checks.yml?style=flat-square)](https://github.com/inputlayer/inferox/actions)
-[![Crates.io](https://img.shields.io/crates/v/inferox?style=flat-square)](https://crates.io/crates/inferox)
-[![Docs](https://img.shields.io/docsrs/inferox?style=flat-square)](https://docs.rs/inferox)
-[![License](https://img.shields.io/crates/l/inferox?style=flat-square)](LICENSE)
+[![PR Checks](https://img.shields.io/github/actions/workflow/status/inputlayer/inferox/pr-checks.yml?style=flat-square&label=checks)](https://github.com/inputlayer/inferox/actions/workflows/pr-checks.yml)
+[![Crates.io](https://img.shields.io/crates/v/inferox-core?style=flat-square)](https://crates.io/crates/inferox-core)
+[![Documentation](https://img.shields.io/docsrs/inferox-core?style=flat-square)](https://docs.rs/inferox-core)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Rust Version](https://img.shields.io/badge/rust-1.70%2B-orange?style=flat-square)](https://www.rust-lang.org)
+[![Downloads](https://img.shields.io/crates/d/inferox-core?style=flat-square)](https://crates.io/crates/inferox-core)
+[![Stars](https://img.shields.io/github/stars/inputlayer/inferox?style=flat-square)](https://github.com/inputlayer/inferox/stargazers)
 
 </div>
 
