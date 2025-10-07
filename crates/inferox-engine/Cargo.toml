@@ -1,0 +1,13 @@
+[package]
+name = "inferox-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+inferox-core = { path = "../inferox-core" }
+thiserror.workspace = true
+
+[dev-dependencies]

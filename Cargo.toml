@@ -1,6 +1,22 @@
-[package]
-name = "inferox"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
+members = [
+    "crates/inferox-core",
+    "crates/inferox-candle",
+    "crates/inferox-engine",
+    "examples/mlp",
+    "examples/mlp/models/classifier",
+    "examples/mlp/models/small",
+]
 
-[dependencies]
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Inferox Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/inferox"
+
+[workspace.dependencies]
+thiserror = "1.0"
+candle-core = "0.8"
+candle-nn = "0.8"

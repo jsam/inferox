@@ -1,0 +1,13 @@
+[package]
+name = "mlp-classifier"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mlp = { path = "../.." }
+inferox-core = { path = "../../../../crates/inferox-core" }
+inferox-candle = { path = "../../../../crates/inferox-candle" }
+candle-core = "0.8"

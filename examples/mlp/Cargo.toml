@@ -1,0 +1,20 @@
+[package]
+name = "mlp"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mlp"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "mlp"
+path = "src/main.rs"
+
+[dependencies]
+inferox-core = { path = "../../crates/inferox-core" }
+inferox-candle = { path = "../../crates/inferox-candle" }
+inferox-engine = { path = "../../crates/inferox-engine" }
+candle-core = "0.8"
+candle-nn = "0.8"
+libloading = "0.8"
