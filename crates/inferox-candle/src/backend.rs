@@ -71,7 +71,7 @@ mod tests {
     fn test_backend_devices() {
         let backend = CandleBackend::cpu().unwrap();
         let devices = backend.devices().unwrap();
-        assert!(devices.len() >= 1);
+        assert!(!devices.is_empty());
     }
 
     #[test]

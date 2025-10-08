@@ -149,7 +149,7 @@ mod tests {
     fn test_engine_config_default() {
         let config = EngineConfig::default();
         assert_eq!(config.max_batch_size, 32);
-        assert_eq!(config.enable_profiling, false);
+        assert!(!config.enable_profiling);
         assert_eq!(config.memory_pool_size, None);
     }
 
@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn test_engine_config_with_profiling() {
         let config = EngineConfig::new().with_profiling(true);
-        assert_eq!(config.enable_profiling, true);
+        assert!(config.enable_profiling);
     }
 
     #[test]
