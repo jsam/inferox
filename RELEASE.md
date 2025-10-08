@@ -1,6 +1,13 @@
 # Release Guide
 
-This document describes how to create a new release of Inferox and publish it to crates.io.
+This document describes how to create a new release of Inferox and publish it to **crates.io** and **docs.rs**.
+
+## 🚀 Quick Start
+
+**Publishing is fully automated via GitHub Actions:**
+
+1. Push a version tag → Workflow publishes to crates.io → docs.rs auto-builds
+2. That's it! ✅
 
 ## Prerequisites
 
@@ -142,11 +149,12 @@ Once the workflow completes:
    - Visit https://crates.io/crates/inferox-engine
    - Confirm new version is listed
 
-2. **Check documentation**
+2. **Check documentation (docs.rs auto-builds when you publish to crates.io)**
    - Visit https://docs.rs/inferox-core
    - Visit https://docs.rs/inferox-candle
    - Visit https://docs.rs/inferox-engine
    - Confirm docs are building (may take 5-10 minutes)
+   - **No manual action needed** - docs.rs monitors crates.io and builds automatically!
 
 3. **Update dependent projects** (if any)
    ```bash
