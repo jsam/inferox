@@ -117,3 +117,204 @@ impl<B: Backend> InferoxEngine<B> {
         &self.backend
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use inferox_candle::CandleBackend;
+    use inferox_core::{Backend, Model, Tensor, TensorBuilder};
+
+    struct DummyModel {
+        name: String,
+    }
+
+    impl Model for DummyModel {
+        type Backend = CandleBackend;
+        type Input = <CandleBackend as Backend>::Tensor;
+        type Output = <CandleBackend as Backend>::Tensor;
+
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn forward(
+            &self,
+            input: Self::Input,
+        ) -> Result<Self::Output, <Self::Backend as Backend>::Error> {
+            Ok(input)
+        }
+    }
+
+    #[test]
+    fn test_engine_config_default() {
+        let config = EngineConfig::default();
+        assert_eq!(config.max_batch_size, 32);
+        assert_eq!(config.enable_profiling, false);
+        assert_eq!(config.memory_pool_size, None);
+    }
+
+    #[test]
+    fn test_engine_config_new() {
+        let config = EngineConfig::new();
+        assert_eq!(config.max_batch_size, 32);
+    }
+
+    #[test]
+    fn test_engine_config_with_max_batch_size() {
+        let config = EngineConfig::new().with_max_batch_size(64);
+        assert_eq!(config.max_batch_size, 64);
+    }
+
+    #[test]
+    fn test_engine_config_with_profiling() {
+        let config = EngineConfig::new().with_profiling(true);
+        assert_eq!(config.enable_profiling, true);
+    }
+
+    #[test]
+    fn test_engine_config_with_memory_pool_size() {
+        let config = EngineConfig::new().with_memory_pool_size(Some(1024));
+        assert_eq!(config.memory_pool_size, Some(1024));
+    }
+
+    #[test]
+    fn test_engine_new() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let engine = InferoxEngine::new(backend, config);
+        assert_eq!(engine.list_models().len(), 0);
+    }
+
+    #[test]
+    fn test_register_model() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend, config);
+
+        let model = DummyModel {
+            name: "test_model".to_string(),
+        };
+        engine.register_model(model);
+
+        assert_eq!(engine.list_models().len(), 1);
+    }
+
+    #[test]
+    fn test_register_boxed_model() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend, config);
+
+        let model: Box<dyn Model<Backend = CandleBackend, Input = _, Output = _>> =
+            Box::new(DummyModel {
+                name: "boxed_model".to_string(),
+            });
+        engine.register_boxed_model(model);
+
+        assert_eq!(engine.list_models().len(), 1);
+    }
+
+    #[test]
+    fn test_infer() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend.clone(), config);
+
+        let model = DummyModel {
+            name: "test".to_string(),
+        };
+        engine.register_model(model);
+
+        let input = backend
+            .tensor_builder()
+            .build_from_vec(vec![1.0f32, 2.0, 3.0], &[1, 3])
+            .unwrap();
+        let output = engine.infer("test", input).unwrap();
+        assert_eq!(output.shape(), &[1, 3]);
+    }
+
+    #[test]
+    fn test_infer_model_not_found() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let engine = InferoxEngine::new(backend.clone(), config);
+
+        let input = backend
+            .tensor_builder()
+            .build_from_vec(vec![1.0f32], &[1, 1])
+            .unwrap();
+        let result = engine.infer("nonexistent", input);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_infer_batch() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend.clone(), config);
+
+        let model = DummyModel {
+            name: "test".to_string(),
+        };
+        engine.register_model(model);
+
+        let input1 = backend
+            .tensor_builder()
+            .build_from_vec(vec![1.0f32, 2.0], &[1, 2])
+            .unwrap();
+        let input2 = backend
+            .tensor_builder()
+            .build_from_vec(vec![3.0f32, 4.0], &[1, 2])
+            .unwrap();
+
+        let outputs = engine.infer_batch("test", vec![input1, input2]).unwrap();
+        assert_eq!(outputs.len(), 2);
+    }
+
+    #[test]
+    fn test_list_models() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend, config);
+
+        let model1 = DummyModel {
+            name: "model1".to_string(),
+        };
+        let model2 = DummyModel {
+            name: "model2".to_string(),
+        };
+
+        engine.register_model(model1);
+        engine.register_model(model2);
+
+        let models = engine.list_models();
+        assert_eq!(models.len(), 2);
+    }
+
+    #[test]
+    fn test_model_info() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend, config);
+
+        let model = DummyModel {
+            name: "test".to_string(),
+        };
+        engine.register_model(model);
+
+        let info = engine.model_info("test");
+        assert!(info.is_some());
+
+        let no_info = engine.model_info("nonexistent");
+        assert!(no_info.is_none());
+    }
+
+    #[test]
+    fn test_backend_accessor() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = EngineConfig::default();
+        let engine = InferoxEngine::new(backend, config);
+
+        assert_eq!(engine.backend().name(), "candle");
+    }
+}

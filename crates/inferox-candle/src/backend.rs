@@ -49,3 +49,47 @@ impl Backend for CandleBackend {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use inferox_core::{Backend, Device};
+
+    #[test]
+    fn test_cpu_backend() {
+        let backend = CandleBackend::cpu().unwrap();
+        assert_eq!(backend.name(), "candle");
+    }
+
+    #[test]
+    fn test_backend_name() {
+        let backend = CandleBackend::cpu().unwrap();
+        assert_eq!(backend.name(), "candle");
+    }
+
+    #[test]
+    fn test_backend_devices() {
+        let backend = CandleBackend::cpu().unwrap();
+        let devices = backend.devices().unwrap();
+        assert!(devices.len() >= 1);
+    }
+
+    #[test]
+    fn test_backend_default_device() {
+        let backend = CandleBackend::cpu().unwrap();
+        let device = backend.default_device();
+        assert!(device.is_available());
+    }
+
+    #[test]
+    fn test_backend_tensor_builder() {
+        let backend = CandleBackend::cpu().unwrap();
+        let _builder = backend.tensor_builder();
+    }
+
+    #[test]
+    fn test_with_device() {
+        let backend = CandleBackend::with_device(CandleDevice::Cpu);
+        assert_eq!(backend.name(), "candle");
+    }
+}

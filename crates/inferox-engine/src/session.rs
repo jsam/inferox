@@ -45,3 +45,111 @@ impl<B: Backend> InferenceSession<B> {
         self.context.cache.get(key)?.downcast_ref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::InferoxEngine;
+    use inferox_candle::CandleBackend;
+    use inferox_core::{Backend, Model, Tensor, TensorBuilder};
+
+    struct DummyModel {
+        name: String,
+    }
+
+    impl Model for DummyModel {
+        type Backend = CandleBackend;
+        type Input = <CandleBackend as Backend>::Tensor;
+        type Output = <CandleBackend as Backend>::Tensor;
+
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn forward(
+            &self,
+            input: Self::Input,
+        ) -> Result<Self::Output, <Self::Backend as Backend>::Error> {
+            Ok(input)
+        }
+    }
+
+    #[test]
+    fn test_session_new() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = crate::EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend, config);
+
+        let model = DummyModel {
+            name: "test".to_string(),
+        };
+        engine.register_model(model);
+
+        let engine_arc = Arc::new(engine);
+        let session = InferenceSession::new(engine_arc, "test".to_string());
+
+        assert_eq!(session.context.batch_size, 1);
+        assert_eq!(session.context.sequence_length, None);
+    }
+
+    #[test]
+    fn test_session_run() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = crate::EngineConfig::default();
+        let mut engine = InferoxEngine::new(backend.clone(), config);
+
+        let model = DummyModel {
+            name: "test".to_string(),
+        };
+        engine.register_model(model);
+
+        let engine_arc = Arc::new(engine);
+        let mut session = InferenceSession::new(engine_arc, "test".to_string());
+
+        let input = backend
+            .tensor_builder()
+            .build_from_vec(vec![1.0f32, 2.0, 3.0], &[1, 3])
+            .unwrap();
+
+        let output = session.run(input).unwrap();
+        assert_eq!(output.shape(), &[1, 3]);
+    }
+
+    #[test]
+    fn test_session_set_batch_size() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = crate::EngineConfig::default();
+        let engine = InferoxEngine::new(backend, config);
+        let engine_arc = Arc::new(engine);
+        let mut session = InferenceSession::new(engine_arc, "test".to_string());
+
+        session.set_batch_size(16);
+        assert_eq!(session.context.batch_size, 16);
+    }
+
+    #[test]
+    fn test_session_state_storage() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = crate::EngineConfig::default();
+        let engine = InferoxEngine::new(backend, config);
+        let engine_arc = Arc::new(engine);
+        let mut session = InferenceSession::new(engine_arc, "test".to_string());
+
+        session.store_state("counter".to_string(), 42usize);
+        let value = session.get_state::<usize>("counter");
+        assert_eq!(value, Some(&42));
+    }
+
+    #[test]
+    fn test_session_state_retrieval_wrong_type() {
+        let backend = CandleBackend::cpu().unwrap();
+        let config = crate::EngineConfig::default();
+        let engine = InferoxEngine::new(backend, config);
+        let engine_arc = Arc::new(engine);
+        let mut session = InferenceSession::new(engine_arc, "test".to_string());
+
+        session.store_state("counter".to_string(), 42usize);
+        let value = session.get_state::<String>("counter");
+        assert_eq!(value, None);
+    }
+}

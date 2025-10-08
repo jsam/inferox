@@ -27,3 +27,34 @@ impl From<CandleDevice> for CandleDeviceWrapper {
         Self(device)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use inferox_core::Device;
+
+    #[test]
+    fn test_cpu_device_id() {
+        let device = CandleDeviceWrapper(CandleDevice::Cpu);
+        assert_eq!(device.id(), DeviceId::Cpu);
+    }
+
+    #[test]
+    fn test_device_is_available() {
+        let device = CandleDeviceWrapper(CandleDevice::Cpu);
+        assert!(device.is_available());
+    }
+
+    #[test]
+    fn test_device_memory_info() {
+        let device = CandleDeviceWrapper(CandleDevice::Cpu);
+        assert!(device.memory_info().is_none());
+    }
+
+    #[test]
+    fn test_device_from_candle_device() {
+        let candle_device = CandleDevice::Cpu;
+        let device: CandleDeviceWrapper = candle_device.into();
+        assert_eq!(device.id(), DeviceId::Cpu);
+    }
+}

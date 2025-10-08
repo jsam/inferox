@@ -71,3 +71,109 @@ impl From<CandleTensor> for InternalTensor {
         tensor.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use candle_core::Device;
+    use inferox_core::{DataType, Device as DeviceTrait, Tensor as TensorTrait};
+
+    #[test]
+    fn test_tensor_shape() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        assert_eq!(candle_tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_tensor_dtype() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let dtype = candle_tensor.dtype();
+        assert_eq!(dtype.name(), "f32");
+    }
+
+    #[test]
+    fn test_tensor_device() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let device = candle_tensor.device();
+        assert_eq!(device.id(), inferox_core::DeviceId::Cpu);
+    }
+
+    #[test]
+    fn test_tensor_reshape() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let reshaped = candle_tensor.reshape(&[3, 2]).unwrap();
+        assert_eq!(reshaped.shape(), &[3, 2]);
+    }
+
+    #[test]
+    fn test_tensor_contiguous() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let contiguous = candle_tensor.contiguous().unwrap();
+        assert_eq!(contiguous.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_tensor_to_device() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let device = CandleDeviceWrapper(Device::Cpu);
+        let moved = candle_tensor.to_device(&device).unwrap();
+        assert_eq!(moved.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_dtype_wrapper_name() {
+        let dtype = CandleDTypeWrapper(CandleDType::F32);
+        assert_eq!(dtype.name(), "f32");
+
+        let dtype = CandleDTypeWrapper(CandleDType::F64);
+        assert_eq!(dtype.name(), "f64");
+
+        let dtype = CandleDTypeWrapper(CandleDType::U32);
+        assert_eq!(dtype.name(), "u32");
+
+        let dtype = CandleDTypeWrapper(CandleDType::I64);
+        assert_eq!(dtype.name(), "i64");
+
+        let dtype = CandleDTypeWrapper(CandleDType::U8);
+        assert_eq!(dtype.name(), "u8");
+    }
+
+    #[test]
+    fn test_dtype_wrapper_size() {
+        let dtype = CandleDTypeWrapper(CandleDType::F64);
+        assert_eq!(dtype.size(), 8);
+
+        let dtype = CandleDTypeWrapper(CandleDType::I64);
+        assert_eq!(dtype.size(), 8);
+
+        let dtype = CandleDTypeWrapper(CandleDType::F32);
+        assert_eq!(dtype.size(), 4);
+
+        let dtype = CandleDTypeWrapper(CandleDType::U32);
+        assert_eq!(dtype.size(), 4);
+
+        let dtype = CandleDTypeWrapper(CandleDType::U8);
+        assert_eq!(dtype.size(), 1);
+    }
+
+    #[test]
+    fn test_tensor_from_internal() {
+        let internal = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor: CandleTensor = internal.into();
+        assert_eq!(candle_tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_internal_from_tensor() {
+        let tensor = InternalTensor::zeros(&[2, 3], CandleDType::F32, &Device::Cpu).unwrap();
+        let candle_tensor = CandleTensor(tensor);
+        let internal: InternalTensor = candle_tensor.into();
+        assert_eq!(internal.dims(), &[2, 3]);
+    }
+}
