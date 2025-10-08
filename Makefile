@@ -48,6 +48,7 @@ help:
 	@echo "  changelog [VERSION=x.y.z]     - Generate changelog (optionally for version)"
 	@echo "  publish-check   - Run all pre-publish validation checks"
 	@echo "  publish-dry-run - Test publish without actually publishing"
+	@echo "  publish         - Publish all crates to crates.io (in sequence)"
 	@echo ""
 	@echo "Coverage:"
 	@echo "  coverage        - Generate coverage report"
@@ -236,17 +237,11 @@ publish-check:
 
 publish-dry-run:
 	@echo "Running dry-run publish..."
-	@echo ""
-	@echo "inferox-core:"
-	@cd crates/inferox-core && cargo publish --dry-run
-	@echo ""
-	@echo "inferox-candle:"
-	@cd crates/inferox-candle && cargo publish --dry-run
-	@echo ""
-	@echo "inferox-engine:"
-	@cd crates/inferox-engine && cargo publish --dry-run
-	@echo ""
-	@echo "✅ Dry-run completed successfully!"
+	@./scripts/publish.sh --dry-run
+
+publish:
+	@echo "Publishing to crates.io..."
+	@./scripts/publish.sh
 
 # Coverage commands
 coverage:
