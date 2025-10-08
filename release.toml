@@ -1,0 +1,60 @@
+# cargo-release configuration
+# https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
+
+# Don't push automatically
+push = false
+
+# Allow dirty working directory (for changelog generation)
+allow-branch = ["main", "release/*"]
+
+# Tag format
+tag-name = "{{version}}"
+tag-prefix = ""
+
+# Sign tags
+sign-tag = false
+
+# Consolidate commits
+consolidate-commits = true
+
+# Pre-release replacements
+pre-release-replacements = [
+  { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}", exactly = 1 },
+  { file = "README.md", search = "inferox-core = \"[^\"]+\"", replace = "inferox-core = \"{{version}}\"" },
+  { file = "README.md", search = "inferox-candle = \"[^\"]+\"", replace = "inferox-candle = \"{{version}}\"" },
+  { file = "README.md", search = "inferox-engine = \"[^\"]+\"", replace = "inferox-engine = \"{{version}}\"" },
+]
+
+# Disable automatic push - we'll do it via PR
+push-remote = "origin"
+
+# Pre-release hook to ensure changelog is generated
+pre-release-hook = ["git", "cliff", "--tag", "{{version}}", "-o", "CHANGELOG.md"]
+
+# Don't publish automatically (we use our own workflow)
+publish = false
+
+# Shared version across workspace
+shared-version = true
+
+# Package-specific settings
+[package.inferox-core]
+# This is the core package, version starts here
+
+[package.inferox-candle]
+# Depends on inferox-core
+
+[package.inferox-engine]
+# Depends on inferox-core
+
+[package.mlp]
+# Example package
+publish = false
+
+[package.mlp-classifier]
+# Model library
+publish = false
+
+[package.mlp-small]
+# Model library
+publish = false

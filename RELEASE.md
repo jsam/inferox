@@ -7,6 +7,11 @@ This document describes how to create a new release of Inferox and publish it to
 - You have write access to the repository
 - Repository secrets are configured:
   - `CARGO_REGISTRY_TOKEN` - Token from crates.io for publishing
+- **Optional but recommended**: Install `git-cliff` for automatic changelog generation:
+  ```bash
+  cargo install git-cliff
+  ```
+  If not installed, the release workflow will skip changelog generation.
 
 ## Release Methods
 
@@ -17,15 +22,20 @@ There are three ways to trigger a release:
 This is the simplest method. Just create and push a version tag:
 
 ```bash
-# 1. Prepare the release (updates versions in all Cargo.toml files)
+# 1. Prepare the release (updates versions + generates changelog)
 make release-prepare VERSION=0.1.0
+
+# This will:
+# - Update version in all Cargo.toml files
+# - Generate CHANGELOG.md with git-cliff
+# - Update version references in README.md
 
 # 2. Review the changes
 git diff
 
 # 3. Commit the version changes
 git add .
-git commit -m "chore: bump version to 0.1.0"
+git commit -m "chore: release 0.1.0"
 
 # 4. Create and push the tag
 git tag 0.1.0
@@ -43,18 +53,18 @@ git push origin 0.1.0
 Create a release through the GitHub UI:
 
 ```bash
-# 1. Prepare the release
+# 1. Prepare the release (includes changelog generation)
 make release-prepare VERSION=0.1.0
 
 # 2. Commit and push
 git add .
-git commit -m "chore: bump version to 0.1.0"
+git commit -m "chore: release 0.1.0"
 git push
 
 # 3. Go to GitHub > Releases > Create a new release
 # - Tag: 0.1.0
 # - Title: Release 0.1.0
-# - Description: Add changelog
+# - Description: Copy from generated CHANGELOG.md
 # - Click "Publish release"
 
 # The workflow will run automatically
@@ -310,13 +320,13 @@ If you encounter issues:
 ## Cheat Sheet
 
 ```bash
-# 1. Prepare release (runs on local machine)
+# 1. Prepare release (updates versions + generates CHANGELOG)
 make release-prepare VERSION=0.1.0
 
 # 2. Create PR (standard pr-checks.yml validates)
 git checkout -b release/0.1.0
 git add .
-git commit -m "chore: bump version to 0.1.0"
+git commit -m "chore: release 0.1.0"
 git push -u origin release/0.1.0
 
 # 3. Merge PR to main
@@ -333,7 +343,7 @@ git push origin 0.1.0  # 🚀 Automatically publishes to crates.io
 For the initial release:
 
 ```bash
-# 1. Ensure all crates have version 0.1.0
+# 1. Prepare release (includes git-cliff changelog generation)
 make release-prepare VERSION=0.1.0
 
 # 2. Run full validation
@@ -341,11 +351,11 @@ make publish-check
 
 # 3. Create release
 git add .
-git commit -m "chore: prepare for initial release 0.1.0"
+git commit -m "chore: release 0.1.0"
 git push
 git tag 0.1.0
 git push origin 0.1.0
 
 # 4. Monitor the release workflow
-# Visit: https://github.com/inputlayer/inferox/actions/workflows/release.yml
+# Visit: https://github.com/jsam/inferox/actions/workflows/release.yml
 ```

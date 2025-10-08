@@ -1,7 +1,7 @@
 # Inferox Makefile
 # Provides convenient commands for testing, building, and development
 
-.PHONY: help build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example release-prepare publish-check publish-dry-run
+.PHONY: help build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example release-prepare publish-check publish-dry-run coverage coverage-check
 
 # Default target
 help:
@@ -47,6 +47,10 @@ help:
 	@echo "  release-prepare VERSION=x.y.z - Prepare release by updating versions"
 	@echo "  publish-check   - Run all pre-publish validation checks"
 	@echo "  publish-dry-run - Test publish without actually publishing"
+	@echo ""
+	@echo "Coverage:"
+	@echo "  coverage        - Generate coverage report"
+	@echo "  coverage-check  - Check if coverage meets threshold"
 
 # Building commands
 build:
@@ -177,7 +181,8 @@ release-prepare:
 		echo "Usage: make release-prepare VERSION=0.1.0"; \
 		exit 1; \
 	fi
-	@echo "Updating version to $(VERSION) in all Cargo.toml files..."
+	@echo ""
+	@echo "1️⃣  Updating version to $(VERSION) in all Cargo.toml files..."
 	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' Cargo.toml
 	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' crates/inferox-core/Cargo.toml
 	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' crates/inferox-candle/Cargo.toml
@@ -186,13 +191,32 @@ release-prepare:
 	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' examples/mlp/models/classifier/Cargo.toml
 	@sed -i.bak 's/^version = ".*"/version = "$(VERSION)"/' examples/mlp/models/small/Cargo.toml
 	@find . -name "*.bak" -delete
-	@echo "✅ Version updated to $(VERSION)"
+	@echo "   ✅ Version updated to $(VERSION)"
 	@echo ""
-	@echo "Next steps:"
+	@echo "2️⃣  Generating changelog with git-cliff..."
+	@if command -v git-cliff >/dev/null 2>&1; then \
+		git cliff --tag $(VERSION) -o CHANGELOG.md && \
+		echo "   ✅ Changelog generated"; \
+	else \
+		echo "   ⚠️  git-cliff not installed. Install with: cargo install git-cliff"; \
+		echo "   Skipping changelog generation..."; \
+	fi
+	@echo ""
+	@echo "3️⃣  Updating README version references..."
+	@sed -i.bak 's/inferox-core = "[^"]*"/inferox-core = "$(VERSION)"/g' README.md
+	@sed -i.bak 's/inferox-candle = "[^"]*"/inferox-candle = "$(VERSION)"/g' README.md
+	@sed -i.bak 's/inferox-engine = "[^"]*"/inferox-engine = "$(VERSION)"/g' README.md
+	@find . -name "*.bak" -delete
+	@echo "   ✅ README updated"
+	@echo ""
+	@echo "✅ Release preparation complete!"
+	@echo ""
+	@echo "📋 Next steps:"
 	@echo "1. Review changes: git diff"
 	@echo "2. Run checks: make publish-check"
-	@echo "3. Commit: git add . && git commit -m 'chore: bump version to $(VERSION)'"
-	@echo "4. Tag: git tag $(VERSION) && git push origin $(VERSION)"
+	@echo "3. Commit: git add . && git commit -m 'chore: release $(VERSION)'"
+	@echo "4. Tag: git tag $(VERSION)"
+	@echo "5. Push: git push origin $(VERSION)"
 
 publish-check:
 	@echo "Running pre-publish checks..."
@@ -238,3 +262,44 @@ publish-dry-run:
 	@cd crates/inferox-engine && cargo publish --dry-run
 	@echo ""
 	@echo "✅ Dry-run completed successfully!"
+
+# Coverage commands
+coverage:
+	@echo "Generating coverage report..."
+	@mkdir -p target/coverage
+	@cargo tarpaulin \
+		--out Html \
+		--out Json \
+		--out Xml \
+		--output-dir target/coverage \
+		--exclude-files examples/* \
+		--timeout 300
+	@echo ""
+	@echo "✅ Coverage report generated!"
+	@echo "  HTML: target/coverage/tarpaulin-report.html"
+	@echo "  JSON: target/coverage/tarpaulin-report.json"
+	@echo "  XML:  target/coverage/tarpaulin-report.xml"
+
+coverage-check:
+	@echo "Checking coverage threshold..."
+	@mkdir -p target/coverage
+	@cargo tarpaulin \
+		--out Json \
+		--output-dir target/coverage \
+		--exclude-files examples/* \
+		--timeout 300 > /dev/null 2>&1
+	@if [ -f target/coverage/tarpaulin-report.json ]; then \
+		COVERAGE=$$(jq -r '.coverage' target/coverage/tarpaulin-report.json 2>/dev/null || echo "0"); \
+		THRESHOLD=65.0; \
+		echo "Coverage: $$COVERAGE%"; \
+		echo "Threshold: $$THRESHOLD%"; \
+		if [ $$(echo "$$COVERAGE >= $$THRESHOLD" | bc -l) -eq 1 ]; then \
+			echo "✅ Coverage meets threshold!"; \
+		else \
+			echo "❌ Coverage below threshold!"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "❌ Coverage report not found!"; \
+		exit 1; \
+	fi

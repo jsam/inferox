@@ -1,1 +1,25 @@
 /target
+
+# Coverage reports
+target/coverage/
+*.profraw
+*.profdata
+tarpaulin-report.*
+
+# Cargo release
+release.toml.bak
+
+# OS specific
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Temporary files
+*.tmp
+*.bak
