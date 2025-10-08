@@ -5,10 +5,11 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Inference engine for Inferox"
 
 [dependencies]
-inferox-core = { path = "../inferox-core" }
+inferox-core = { version = "0.1.0", path = "../inferox-core" }
 thiserror.workspace = true
 
 [dev-dependencies]
-inferox-candle = { path = "../inferox-candle" }
+inferox-candle = { version = "0.1.0", path = "../inferox-candle" }
