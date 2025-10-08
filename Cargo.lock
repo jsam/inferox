@@ -522,6 +522,7 @@ dependencies = [
 name = "inferox-engine"
 version = "0.1.0"
 dependencies = [
+ "inferox-candle",
  "inferox-core",
  "thiserror",
 ]

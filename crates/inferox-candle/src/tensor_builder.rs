@@ -86,3 +86,112 @@ impl TensorBuilder<CandleBackend> for CandleTensorBuilder {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use inferox_core::{DType, Tensor, TensorBuilder};
+
+    #[test]
+    fn test_build_from_slice() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let data = vec![1.0f32, 2.0, 3.0, 4.0];
+        let tensor = builder.build_from_slice(&data, &[2, 2]).unwrap();
+        assert_eq!(tensor.shape(), &[2, 2]);
+    }
+
+    #[test]
+    fn test_build_from_vec() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let data = vec![1.0f32, 2.0, 3.0, 4.0];
+        let tensor = builder.build_from_vec(data, &[2, 2]).unwrap();
+        assert_eq!(tensor.shape(), &[2, 2]);
+    }
+
+    #[test]
+    fn test_zeros() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.zeros(&[2, 3], DType::F32).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_zeros_f64() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.zeros(&[2, 3], DType::F64).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_zeros_i64() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.zeros(&[2, 3], DType::I64).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_zeros_u8() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.zeros(&[2, 3], DType::U8).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_ones() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.ones(&[2, 3], DType::F32).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_ones_f64() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.ones(&[2, 3], DType::F64).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_randn() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.randn(&[2, 3], DType::F32).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_randn_f64() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let tensor = builder.randn(&[2, 3], DType::F64).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_with_device() {
+        let builder = CandleTensorBuilder {
+            device: CandleDevice::Cpu,
+        };
+        let device_wrapper = CandleDeviceWrapper(CandleDevice::Cpu);
+        let new_builder = builder.with_device(device_wrapper);
+        let tensor = new_builder.zeros(&[2, 3], DType::F32).unwrap();
+        assert_eq!(tensor.shape(), &[2, 3]);
+    }
+}

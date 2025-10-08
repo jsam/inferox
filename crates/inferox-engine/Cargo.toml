@@ -11,3 +11,4 @@ inferox-core = { path = "../inferox-core" }
 thiserror.workspace = true
 
 [dev-dependencies]
+inferox-candle = { path = "../inferox-candle" }

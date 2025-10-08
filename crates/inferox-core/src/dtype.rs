@@ -132,4 +132,32 @@ mod tests {
         assert_eq!(DType::F32, DType::F32);
         assert_ne!(DType::F32, DType::F64);
     }
+
+    #[test]
+    fn test_as_f32_slice_f64() {
+        let data: Vec<f64> = vec![1.0, 2.0, 3.0];
+        let result = f64::as_f32_slice(&data);
+        assert_eq!(result, vec![1.0f32, 2.0f32, 3.0f32]);
+    }
+
+    #[test]
+    fn test_as_f32_slice_i32() {
+        let data: Vec<i32> = vec![1, 2, 3];
+        let result = i32::as_f32_slice(&data);
+        assert_eq!(result, vec![1.0f32, 2.0f32, 3.0f32]);
+    }
+
+    #[test]
+    fn test_as_f32_slice_i64() {
+        let data: Vec<i64> = vec![1, 2, 3];
+        let result = i64::as_f32_slice(&data);
+        assert_eq!(result, vec![1.0f32, 2.0f32, 3.0f32]);
+    }
+
+    #[test]
+    fn test_as_f32_slice_u8() {
+        let data: Vec<u8> = vec![1, 2, 3];
+        let result = u8::as_f32_slice(&data);
+        assert_eq!(result, vec![1.0f32, 2.0f32, 3.0f32]);
+    }
 }
