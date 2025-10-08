@@ -77,15 +77,23 @@ git checkout -b "$RELEASE_BRANCH"
 echo -e "${GREEN}Generating changelog...${NC}"
 git-cliff --tag "${NEW_VERSION}" -o CHANGELOG.md
 
-# Update version in Cargo.toml
-echo -e "${GREEN}Updating version in Cargo.toml...${NC}"
+# Update version in Cargo.toml files
+echo -e "${GREEN}Updating version in Cargo.toml files...${NC}"
 sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" Cargo.toml
-rm Cargo.toml.bak
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" crates/inferox-core/Cargo.toml
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" crates/inferox-candle/Cargo.toml
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" crates/inferox-engine/Cargo.toml
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" examples/mlp/Cargo.toml
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" examples/mlp/models/classifier/Cargo.toml
+sed -i.bak "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" examples/mlp/models/small/Cargo.toml
+find . -name "*.bak" -delete
 
 # Update version in README.md
 echo -e "${GREEN}Updating version in README.md...${NC}"
-sed -i.bak "s/rpcnet = \"[^\"]*\"/rpcnet = \"${NEW_VERSION}\"/" README.md
-rm README.md.bak
+sed -i.bak "s/inferox-core = \"[^\"]*\"/inferox-core = \"${NEW_VERSION}\"/" README.md
+sed -i.bak "s/inferox-candle = \"[^\"]*\"/inferox-candle = \"${NEW_VERSION}\"/" README.md
+sed -i.bak "s/inferox-engine = \"[^\"]*\"/inferox-engine = \"${NEW_VERSION}\"/" README.md
+rm -f README.md.bak
 
 # Update lock file
 echo -e "${GREEN}Updating Cargo.lock...${NC}"
@@ -97,7 +105,7 @@ git diff --stat
 
 # Commit changes
 echo -e "${GREEN}Committing changes...${NC}"
-git add Cargo.toml Cargo.lock CHANGELOG.md README.md
+git add Cargo.toml Cargo.lock CHANGELOG.md README.md crates/ examples/
 git commit -m "chore(release): prepare for ${NEW_VERSION}
 
 - Update version to ${NEW_VERSION}
