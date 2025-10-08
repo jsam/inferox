@@ -503,7 +503,7 @@ dependencies = [
 
 [[package]]
 name = "inferox-candle"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "candle-core",
  "candle-nn",
@@ -513,14 +513,14 @@ dependencies = [
 
 [[package]]
 name = "inferox-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "inferox-engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "inferox-candle",
  "inferox-core",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "mlp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "candle-core",
  "candle-nn",
@@ -585,7 +585,7 @@ dependencies = [
 
 [[package]]
 name = "mlp-classifier"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "candle-core",
  "inferox-candle",
@@ -595,7 +595,7 @@ dependencies = [
 
 [[package]]
 name = "mlp-small"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "candle-core",
  "inferox-candle",
