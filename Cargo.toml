@@ -9,6 +9,7 @@ members = [
     "examples/mlp/models/small",
 ]
 
+
 [workspace.package]
 version = "0.1.1"
 edition = "2021"
