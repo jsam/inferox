@@ -19,7 +19,7 @@ repository = "https://github.com/yourusername/inferox"
 
 [workspace.dependencies]
 thiserror = "1.0"
-candle-core = "0.9.1"
-candle-nn = "0.9.1"
+candle-core = { git = "https://github.com/huggingface/candle", branch = "main" }
+candle-nn = { git = "https://github.com/huggingface/candle", branch = "main" }
 
 

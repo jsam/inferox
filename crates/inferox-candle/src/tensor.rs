@@ -18,6 +18,7 @@ impl DataType for CandleDTypeWrapper {
             CandleDType::U8 => "u8",
             CandleDType::BF16 => "bf16",
             CandleDType::F16 => "f16",
+            CandleDType::F8E4M3 => "f8e4m3",
         }
     }
 
@@ -26,7 +27,7 @@ impl DataType for CandleDTypeWrapper {
             CandleDType::F64 | CandleDType::I64 => 8,
             CandleDType::F32 | CandleDType::U32 => 4,
             CandleDType::F16 | CandleDType::BF16 => 2,
-            CandleDType::U8 => 1,
+            CandleDType::U8 | CandleDType::F8E4M3 => 1,
         }
     }
 }
