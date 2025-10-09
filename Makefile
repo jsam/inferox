@@ -253,8 +253,7 @@ coverage:
 		--out Xml \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300 \
-		--target-dir target/tarpaulin-build
+		--timeout 300
 	@echo ""
 	@echo "✅ Coverage report generated!"
 	@echo "  HTML: target/coverage/tarpaulin-report.html"
@@ -268,8 +267,7 @@ coverage-check:
 		--out Json \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300 \
-		--target-dir target/tarpaulin-build
+		--timeout 300
 	@if [ -f target/coverage/tarpaulin-report.json ]; then \
 		COVERAGE=$$(jq -r '.coverage' target/coverage/tarpaulin-report.json 2>/dev/null || echo "0"); \
 		THRESHOLD=65.0; \

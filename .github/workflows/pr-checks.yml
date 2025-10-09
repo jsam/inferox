@@ -201,9 +201,6 @@ jobs:
   coverage:
     name: Coverage Check
     runs-on: ubuntu-latest
-    env:
-      # Force non-AVX path so pulp doesn't compile the failing code path.
-      RUSTFLAGS: "-C target-feature=-avx,-avx2"
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
