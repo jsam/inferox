@@ -244,6 +244,8 @@ publish:
 	@./scripts/publish.sh
 
 # Coverage commands
+# Note: --avoid-cfg-tarpaulin flag works around pulp v0.18.22 compilation issue
+# See: https://github.com/sarah-ek/pulp/issues/17
 coverage:
 	@echo "Generating coverage report..."
 	@mkdir -p target/coverage
@@ -253,7 +255,9 @@ coverage:
 		--out Xml \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300
+		--timeout 300 \
+		--workspace \
+		--avoid-cfg-tarpaulin
 	@echo ""
 	@echo "✅ Coverage report generated!"
 	@echo "  HTML: target/coverage/tarpaulin-report.html"
@@ -267,7 +271,9 @@ coverage-check:
 		--out Json \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300 || true
+		--timeout 300 \
+		--workspace \
+		--avoid-cfg-tarpaulin || true
 	@if [ -f target/coverage/tarpaulin-report.json ]; then \
 		COVERAGE=$$(jq -r '.coverage' target/coverage/tarpaulin-report.json 2>/dev/null || echo "0"); \
 		THRESHOLD=65.0; \

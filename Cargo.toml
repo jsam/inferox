@@ -20,3 +20,4 @@ repository = "https://github.com/yourusername/inferox"
 thiserror = "1.0"
 candle-core = "0.8"
 candle-nn = "0.8"
+
