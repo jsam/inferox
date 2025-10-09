@@ -253,7 +253,8 @@ coverage:
 		--out Xml \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300
+		--timeout 300 \
+		--target-dir target/tarpaulin-build
 	@echo ""
 	@echo "✅ Coverage report generated!"
 	@echo "  HTML: target/coverage/tarpaulin-report.html"
@@ -267,7 +268,8 @@ coverage-check:
 		--out Json \
 		--output-dir target/coverage \
 		--exclude-files examples/* \
-		--timeout 300 || true
+		--timeout 300 \
+		--target-dir target/tarpaulin-build
 	@if [ -f target/coverage/tarpaulin-report.json ]; then \
 		COVERAGE=$$(jq -r '.coverage' target/coverage/tarpaulin-report.json 2>/dev/null || echo "0"); \
 		THRESHOLD=65.0; \
@@ -281,6 +283,6 @@ coverage-check:
 			echo "ℹ️  This is expected for initial releases with minimal tests."; \
 		fi; \
 	else \
-		echo "⚠️  Coverage report not found - likely due to pulp v0.18.22 issue on Linux."; \
-		echo "ℹ️  See: https://github.com/sarah-ek/pulp/issues/17"; \
+		echo "❌ Coverage report not found!"; \
+		exit 1; \
 	fi

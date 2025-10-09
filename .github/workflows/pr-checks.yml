@@ -233,7 +233,6 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-coverage-
     
     - name: Run coverage check
-      continue-on-error: true
       run: make coverage-check
     
     - name: Comment on PR about coverage
@@ -243,28 +242,6 @@ jobs:
         script: |
           const fs = require('fs');
           try {
-            // Check if coverage report was generated
-            if (!fs.existsSync('target/coverage/tarpaulin-report.json')) {
-              // Coverage failed - known issue with pulp v0.18.22
-              const body = `## ⚠️ Coverage Check Skipped
-              
-              Coverage analysis is currently disabled due to a known issue with \`pulp\` v0.18.22 dependency.
-              
-              **This is not a blocker** - all other checks must pass.
-              
-              See: https://github.com/sarah-ek/pulp/issues/17
-              `;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: body
-              });
-              return;
-            }
-            
-            // Coverage report exists - show results
             const coverage = JSON.parse(fs.readFileSync('target/coverage/tarpaulin-report.json', 'utf8'));
             const coveragePercent = coverage.coverage.toFixed(1);
             const threshold = 65.0;
