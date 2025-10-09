@@ -16,6 +16,6 @@ path = "src/main.rs"
 inferox-core = { path = "../../crates/inferox-core" }
 inferox-candle = { path = "../../crates/inferox-candle" }
 inferox-engine = { path = "../../crates/inferox-engine" }
-candle-core = "0.8"
-candle-nn = "0.8"
+candle-core.workspace = true
+candle-nn.workspace = true
 libloading = "0.8"

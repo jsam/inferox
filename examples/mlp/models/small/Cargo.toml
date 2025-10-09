@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 mlp = { path = "../.." }
 inferox-core = { path = "../../../../crates/inferox-core" }
 inferox-candle = { path = "../../../../crates/inferox-candle" }
-candle-core = "0.8"
+candle-core.workspace = true
