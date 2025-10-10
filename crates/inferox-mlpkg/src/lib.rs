@@ -14,19 +14,19 @@ pub enum Error {
     /// Hugging Face download error
     #[error("HF download error: {0}")]
     HfDownload(String),
-    
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     /// Serialization error
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     /// Invalid package format
     #[error("Invalid package format: {0}")]
     InvalidFormat(String),
-    
+
     /// Generic error
     #[error("{0}")]
     Generic(String),
@@ -40,19 +40,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct PackageMetadata {
     /// Package format version
     pub version: String,
-    
+
     /// Model name
     pub name: String,
-    
+
     /// Model repository ID on Hugging Face
     pub repo_id: String,
-    
+
     /// Model revision/commit
     pub revision: String,
-    
+
     /// List of files included in the package
     pub files: Vec<String>,
-    
+
     /// Creation timestamp
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -69,24 +69,24 @@ impl PackageManager {
     pub fn new(cache_dir: PathBuf) -> Result<Self> {
         let hf_client = hf_xet_rs::HfXetClient::with_cache_dir(cache_dir.clone())
             .map_err(|e| Error::HfDownload(e.to_string()))?;
-        
-        Ok(Self { cache_dir, hf_client })
+
+        Ok(Self {
+            cache_dir,
+            hf_client,
+        })
     }
-    
+
     /// Download a model package from Hugging Face
-    pub async fn download(
-        &self,
-        repo_id: &str,
-        revision: Option<&str>,
-    ) -> Result<PathBuf> {
-        let path = self.hf_client
+    pub async fn download(&self, repo_id: &str, revision: Option<&str>) -> Result<PathBuf> {
+        let path = self
+            .hf_client
             .snapshot_download(repo_id, revision, None, None)
             .await
             .map_err(|e| Error::HfDownload(e.to_string()))?;
-        
+
         Ok(path)
     }
-    
+
     /// Download specific files from a repository
     pub async fn download_files(
         &self,
@@ -94,14 +94,15 @@ impl PackageManager {
         patterns: &[&str],
         revision: Option<&str>,
     ) -> Result<Vec<PathBuf>> {
-        let paths = self.hf_client
+        let paths = self
+            .hf_client
             .download_files(repo_id, patterns, revision)
             .await
             .map_err(|e| Error::HfDownload(e.to_string()))?;
-        
+
         Ok(paths)
     }
-    
+
     /// Load package metadata
     pub fn load_metadata(&self, package_path: &std::path::Path) -> Result<PackageMetadata> {
         let metadata_path = package_path.join("metadata.json");
