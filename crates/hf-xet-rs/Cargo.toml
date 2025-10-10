@@ -1,16 +1,30 @@
 [package]
-name = "inferox-mlpkg"
+name = "hf-xet-rs"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Model package format for Inferox"
+description = "Rust client for Hugging Face model downloads using XET technology"
 
 [dependencies]
 thiserror.workspace = true
 tokio = { version = "1.35", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-hf-xet-rs = { path = "../hf-xet-rs" }
+sha2 = "0.10"
+base64 = "0.22"
+dirs = "5.0"
+futures = "0.3"
+bytes = "1.5"
+tracing = "0.1"
+anyhow = "1.0"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
+
+[features]
+default = []

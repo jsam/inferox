@@ -23,3 +23,10 @@ release.toml.bak
 # Temporary files
 *.tmp
 *.bak
+
+# HuggingFace tokens (for testing only - never commit!)
+.hftoken
+*.hftoken
+
+# Integration test artifacts
+crates/hf-xet-rs/test-cache/

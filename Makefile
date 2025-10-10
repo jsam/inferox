@@ -227,11 +227,12 @@ publish-check:
 	@cargo package --list --allow-dirty -p inferox-core > /dev/null 2>&1 || (echo "❌ inferox-core package list failed!" && exit 1)
 	@cargo package --list --allow-dirty -p inferox-candle > /dev/null 2>&1 || (echo "❌ inferox-candle package list failed!" && exit 1)
 	@cargo package --list --allow-dirty -p inferox-engine > /dev/null 2>&1 || (echo "❌ inferox-engine package list failed!" && exit 1)
+	@cargo package --list --allow-dirty -p inferox-mlpkg > /dev/null 2>&1 || (echo "❌ inferox-mlpkg package list failed!" && exit 1)
 	@echo "✅ Package metadata checks passed"
 	@echo ""
 	@echo "ℹ️  Note: Full package validation with crates.io dependencies"
 	@echo "   requires publishing inferox-core first, then inferox-candle,"
-	@echo "   then inferox-engine in sequence."
+	@echo "   then inferox-engine, then inferox-mlpkg in sequence."
 	@echo ""
 	@echo "✅ All publish checks passed! Ready to release."
 
