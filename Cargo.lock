@@ -407,6 +407,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "inferox-mlpkg"
+version = "0.1.1"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
