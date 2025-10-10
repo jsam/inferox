@@ -4,6 +4,7 @@ members = [
     "crates/inferox-core",
     "crates/inferox-candle",
     "crates/inferox-engine",
+    "crates/inferox-mlpkg",
     "examples/mlp",
     "examples/mlp/models/classifier",
     "examples/mlp/models/small",
