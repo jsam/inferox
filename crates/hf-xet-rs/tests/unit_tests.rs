@@ -85,6 +85,172 @@ fn matches_pattern(path: &str, pattern: &str) -> bool {
 }
 
 #[test]
+fn test_cache_size_and_count() {
+    use hf_xet_rs::cache::ChunkCache;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let cache = ChunkCache::new(dir.path().to_path_buf(), 1024 * 1024).unwrap();
+
+    cache.put("chunk1", b"data1").unwrap();
+    cache.put("chunk2", b"data2data2").unwrap();
+
+    let size = cache.size().unwrap();
+    assert!(size > 0);
+
+    let count = cache.count().unwrap();
+    assert_eq!(count, 2);
+}
+
+#[test]
+fn test_cache_evict_lru() {
+    use hf_xet_rs::cache::ChunkCache;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let mut cache = ChunkCache::new(dir.path().to_path_buf(), 1024 * 1024).unwrap();
+
+    cache.put("chunk1", b"data1").unwrap();
+    cache.put("chunk2", b"data2").unwrap();
+
+    let initial_size = cache.size().unwrap();
+    let freed = cache.evict_lru(0).unwrap();
+
+    assert!(freed > 0);
+    assert!(freed <= initial_size);
+}
+
+#[test]
+fn test_client_load_token() {
+    use std::env;
+
+    env::set_var("HF_TOKEN", "test_token_12345");
+
+    // Indirectly test by creating a client which calls load_token
+    use hf_xet_rs::HfXetClient;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let client = HfXetClient::with_cache_dir(dir.path().to_path_buf());
+    assert!(client.is_ok());
+
+    env::remove_var("HF_TOKEN");
+}
+
+#[test]
+fn test_client_with_token() {
+    use hf_xet_rs::HfXetClient;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let client = HfXetClient::with_cache_dir(dir.path().to_path_buf())
+        .unwrap()
+        .with_token("custom_token".to_string());
+
+    // Client creation should succeed
+    assert!(client.clear_cache().is_ok());
+}
+
+#[test]
+fn test_cache_stats_zero() {
+    use hf_xet_rs::HfXetClient;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let client = HfXetClient::with_cache_dir(dir.path().to_path_buf()).unwrap();
+
+    let stats = client.cache_stats().unwrap();
+    assert_eq!(stats.hit_rate, 0.0);
+}
+
+#[test]
+fn test_xet_pointer() {
+    use hf_xet_rs::types::XetPointer;
+
+    let pointer = XetPointer {
+        xet_hash: "abc123".to_string(),
+        size: 1024,
+    };
+
+    assert_eq!(pointer.xet_hash, "abc123");
+    assert_eq!(pointer.size, 1024);
+}
+
+#[test]
+fn test_repo_info_defaults() {
+    use hf_xet_rs::types::RepoInfo;
+
+    let json = r#"{
+        "modelId": "test/model"
+    }"#;
+
+    let info: RepoInfo = serde_json::from_str(json).unwrap();
+    assert_eq!(info.id, "test/model");
+    assert_eq!(info.author, "");
+    assert_eq!(info.sha, "");
+    assert_eq!(info.downloads, 0);
+    assert_eq!(info.likes, 0);
+    assert!(info.tags.is_empty());
+    assert!(info.siblings.is_empty());
+}
+
+#[test]
+fn test_lfs_pointer() {
+    use hf_xet_rs::types::LfsPointer;
+
+    let pointer = LfsPointer {
+        oid: "sha256:abc123".to_string(),
+        size: 2048,
+    };
+
+    assert_eq!(pointer.oid, "sha256:abc123");
+    assert_eq!(pointer.size, 2048);
+}
+
+#[test]
+fn test_error_types() {
+    use hf_xet_rs::Error;
+
+    let err = Error::RepoNotFound("test/repo".to_string());
+    assert!(err.to_string().contains("test/repo"));
+
+    let err = Error::FileNotFound("file.txt".to_string());
+    assert!(err.to_string().contains("file.txt"));
+
+    let err = Error::Cache("cache error".to_string());
+    assert!(err.to_string().contains("cache error"));
+
+    let err = Error::Reconstruction("recon error".to_string());
+    assert!(err.to_string().contains("recon error"));
+
+    let err = Error::InvalidPointer("invalid".to_string());
+    assert!(err.to_string().contains("invalid"));
+
+    let err = Error::Config("config error".to_string());
+    assert!(err.to_string().contains("config error"));
+}
+
+#[tokio::test]
+async fn test_client_prune_cache() {
+    use hf_xet_rs::HfXetClient;
+    use tempfile::tempdir;
+
+    let dir = tempdir().unwrap();
+    let mut client = HfXetClient::with_cache_dir(dir.path().to_path_buf()).unwrap();
+
+    let freed = client.prune_cache(0);
+    assert!(freed.is_ok());
+}
+
+#[test]
+fn test_client_new() {
+    use hf_xet_rs::HfXetClient;
+
+    let result = HfXetClient::new();
+    assert!(result.is_ok());
+}
+
+#[test]
 fn test_cache_stats_display() {
     use hf_xet_rs::CacheStats;
 
