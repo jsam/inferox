@@ -13,6 +13,7 @@ members = [
 ]
 exclude = [
     "crates/inferox-tch",
+    "examples/bert-tch",
 ]
 
 

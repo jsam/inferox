@@ -22,6 +22,7 @@ help:
 	@echo "  test-engine       - Run engine tests only"
 	@echo "  test-examples     - Run example tests"
 	@echo "  test-all-examples - Build and test ALL examples (MLP + BERT with package assembly)"
+	@echo "  test-bert-tch     - Build and test BERT-Tch example (requires LibTorch)"
 	@echo ""
 	@echo "Development:"
 	@echo "  pre-commit      - Quick pre-commit checks (format + lint + test)"
@@ -135,6 +136,32 @@ test-all-examples:
 	@echo "✅ BERT-Candle tests passed"
 	@echo ""
 	@echo "✅ All examples built and tested successfully!"
+
+test-bert-tch:
+	@echo "Building and testing BERT-Tch example (requires LibTorch)..."
+	@echo ""
+	@echo "1. Building BERT-Tch library..."
+	@cargo build --release -p bert-tch || (echo "❌ BERT-Tch library build failed!" && exit 1)
+	@echo "✅ BERT-Tch library built"
+	@echo ""
+	@echo "2. Assembling BERT-Tch package..."
+	@touch examples/bert-tch/build.rs
+	@cargo build --release -p bert-tch || (echo "❌ BERT-Tch package assembly failed!" && exit 1)
+	@echo "✅ BERT-Tch package assembled"
+	@echo ""
+	@echo "3. Verifying package exists..."
+	@if [ ! -d "target/mlpkg/bert-tch" ]; then \
+		echo "❌ Package directory not found at target/mlpkg/bert-tch"; \
+		exit 1; \
+	fi
+	@echo "✅ Package verified at target/mlpkg/bert-tch"
+	@echo ""
+	@echo "4. Testing BERT-Tch example (including e2e tests)..."
+	@cargo test -p bert-tch || (echo "❌ BERT-Tch unit tests failed!" && exit 1)
+	@cargo test --test e2e_test -p bert-tch -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
+	@echo "✅ BERT-Tch tests passed"
+	@echo ""
+	@echo "✅ BERT-Tch example built and tested successfully!"
 
 lint-quick:
 	@echo ""
