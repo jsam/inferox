@@ -9,6 +9,7 @@ members = [
     "examples/mlp",
     "examples/mlp/models/classifier",
     "examples/mlp/models/small",
+    "examples/bert-candle",
 ]
 
 
@@ -23,5 +24,6 @@ repository = "https://github.com/yourusername/inferox"
 thiserror = "1.0"
 candle-core = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-nn = { git = "https://github.com/huggingface/candle", branch = "main" }
+candle-transformers = { git = "https://github.com/huggingface/candle", branch = "main" }
 
 

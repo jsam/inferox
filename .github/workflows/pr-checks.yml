@@ -168,7 +168,7 @@ jobs:
 
   # Verify examples compile
   examples:
-    name: Examples
+    name: Examples (Build & Test All)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -191,11 +191,18 @@ jobs:
         key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-examples-
     
-    - name: Build examples
-      run: make examples
+    - name: Build and test all examples
+      run: make test-all-examples
     
-    - name: Run example tests
-      run: make test-examples
+    - name: Upload test artifacts (if failed)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: example-test-artifacts
+        path: |
+          target/debug/
+          target/release/
+        retention-days: 3
 
   # HF Integration Tests
   hf-integration:

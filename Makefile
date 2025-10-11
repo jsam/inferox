@@ -15,12 +15,13 @@ help:
 	@echo "  examples        - Build all example binaries"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test            - Run tests + quick lint (recommended)"
-	@echo "  test-quick      - Run tests only (faster)"
-	@echo "  test-core       - Run core library tests only"
-	@echo "  test-candle     - Run Candle backend tests only"
-	@echo "  test-engine     - Run engine tests only"
-	@echo "  test-examples   - Run example tests"
+	@echo "  test              - Run tests + quick lint (recommended)"
+	@echo "  test-quick        - Run tests only (faster)"
+	@echo "  test-core         - Run core library tests only"
+	@echo "  test-candle       - Run Candle backend tests only"
+	@echo "  test-engine       - Run engine tests only"
+	@echo "  test-examples     - Run example tests"
+	@echo "  test-all-examples - Build and test ALL examples (MLP + BERT)"
 	@echo ""
 	@echo "Development:"
 	@echo "  pre-commit      - Quick pre-commit checks (format + lint + test)"
@@ -100,6 +101,28 @@ test-engine:
 test-examples:
 	@echo "Running example tests..."
 	cargo test -p mlp
+	
+test-all-examples:
+	@echo "Building and testing all examples..."
+	@echo ""
+	@echo "1. Building MLP example models..."
+	@cargo build --release -p mlp-classifier -p mlp-small || (echo "❌ MLP models build failed!" && exit 1)
+	@echo "✅ MLP models built"
+	@echo ""
+	@echo "2. Testing MLP example..."
+	@cargo test -p mlp || (echo "❌ MLP tests failed!" && exit 1)
+	@echo "✅ MLP tests passed"
+	@echo ""
+	@echo "3. Building BERT-Candle example..."
+	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle build failed!" && exit 1)
+	@echo "✅ BERT-Candle built and package assembled"
+	@echo ""
+	@echo "4. Testing BERT-Candle example (including e2e tests)..."
+	@cargo test -p bert-candle || (echo "❌ BERT-Candle unit tests failed!" && exit 1)
+	@cargo test --test e2e_test -p bert-candle -- --ignored --nocapture || (echo "❌ BERT-Candle e2e tests failed!" && exit 1)
+	@echo "✅ BERT-Candle tests passed"
+	@echo ""
+	@echo "✅ All examples built and tested successfully!"
 
 lint-quick:
 	@echo ""

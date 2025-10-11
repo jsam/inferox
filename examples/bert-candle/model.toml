@@ -1,0 +1,3 @@
+# Model configuration for bert-candle
+repo_id = "bert-base-uncased"
+backend = "candle"

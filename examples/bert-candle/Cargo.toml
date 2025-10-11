@@ -1,0 +1,26 @@
+[package]
+name = "bert-candle"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+inferox-core = { path = "../../crates/inferox-core" }
+inferox-candle = { path = "../../crates/inferox-candle" }
+candle-core.workspace = true
+candle-nn.workspace = true
+candle-transformers.workspace = true
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+inferox-mlpkg = { path = "../../crates/inferox-mlpkg" }
+inferox-engine = { path = "../../crates/inferox-engine" }
+tokio = { version = "1.35", features = ["full"] }
+
+[build-dependencies]
+inferox-mlpkg = { path = "../../crates/inferox-mlpkg" }
+tokio = { version = "1.35", features = ["full", "rt-multi-thread"] }
