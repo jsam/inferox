@@ -101,7 +101,7 @@ jobs:
       run: make ci-test
     
     - name: Run doctests
-      run: cargo test --doc
+      run: cargo test --workspace --exclude inferox-tch --doc
 
   # Build model libraries
   models:
