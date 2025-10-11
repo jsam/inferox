@@ -16,7 +16,7 @@ serde_json = "1.0"
 safetensors = "0.4"
 
 [dev-dependencies]
-inferox-mlpkg = { path = "../../crates/inferox-mlpkg" }
+inferox-mlpkg = { path = "../../crates/inferox-mlpkg", features = ["tch"] }
 inferox-engine = { path = "../../crates/inferox-engine" }
 tokio = { version = "1.35", features = ["full"] }
 

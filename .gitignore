@@ -30,3 +30,8 @@ release.toml.bak
 
 # Integration test artifacts
 crates/hf-xet-rs/test-cache/
+
+
+examples/bert-tch/target
+examples/bert-tch/mlpkg/
+examples/bert-tch/examples

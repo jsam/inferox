@@ -1,6 +1,6 @@
 use inferox_core::{Backend, Tensor, TensorBuilder};
 use inferox_mlpkg::{BackendType, PackageManager};
-use inferox_tch::TchBackend;
+use inferox_tch::{TchBackend, TchTensor};
 use std::path::PathBuf;
 
 #[tokio::test]
@@ -42,7 +42,7 @@ async fn test_bert_tch_package_end_to_end() {
 
     println!("2. Loading model with libloading...");
     let model = manager
-        .load_model(&package, BackendType::Tch)
+        .load_model_tch(&package, BackendType::Tch)
         .expect("Failed to load model");
 
     println!("   Model name: {}", model.name());
@@ -123,7 +123,7 @@ async fn test_bert_tch_with_inferox_engine() {
     );
 
     let model = manager
-        .load_model(&package, BackendType::Tch)
+        .load_model_tch(&package, BackendType::Tch)
         .expect("Failed to load model");
 
     let model_name = model.name().to_string();

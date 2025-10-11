@@ -2,8 +2,16 @@ use crate::{TchBackend, TchDeviceWrapper};
 use inferox_core::{DataType, Tensor as TensorTrait};
 use tch::{Kind as TchKind, Tensor as InternalTensor};
 
-#[derive(Clone)]
 pub struct TchTensor(pub InternalTensor);
+
+impl Clone for TchTensor {
+    fn clone(&self) -> Self {
+        TchTensor(self.0.shallow_clone())
+    }
+}
+
+unsafe impl Send for TchTensor {}
+unsafe impl Sync for TchTensor {}
 
 #[derive(Clone, Copy)]
 pub struct TchDTypeWrapper(pub TchKind);

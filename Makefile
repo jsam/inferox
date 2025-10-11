@@ -140,13 +140,17 @@ test-all-examples:
 test-bert-tch:
 	@echo "Building and testing BERT-Tch example (requires LibTorch)..."
 	@echo ""
+	@echo "ℹ️  Checking for PyTorch installation..."
+	@python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" 2>/dev/null || \
+		(echo "❌ PyTorch not found! Install with: pip3 install torch==2.4.0" && exit 1)
+	@echo ""
 	@echo "1. Building BERT-Tch library..."
-	@cd examples/bert-tch && cargo build --release || (echo "❌ BERT-Tch library build failed!" && exit 1)
+	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release || (echo "❌ BERT-Tch library build failed!" && exit 1)
 	@echo "✅ BERT-Tch library built"
 	@echo ""
 	@echo "2. Assembling BERT-Tch package..."
 	@touch examples/bert-tch/build.rs
-	@cd examples/bert-tch && cargo build --release || (echo "❌ BERT-Tch package assembly failed!" && exit 1)
+	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release || (echo "❌ BERT-Tch package assembly failed!" && exit 1)
 	@echo "✅ BERT-Tch package assembled"
 	@echo ""
 	@echo "3. Verifying package exists..."
@@ -157,8 +161,14 @@ test-bert-tch:
 	@echo "✅ Package verified at target/mlpkg/bert-tch"
 	@echo ""
 	@echo "4. Testing BERT-Tch example (including e2e tests)..."
-	@cd examples/bert-tch && cargo test || (echo "❌ BERT-Tch unit tests failed!" && exit 1)
-	@cd examples/bert-tch && cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
+	@cd examples/bert-tch && \
+		LIBTORCH_USE_PYTORCH=1 \
+		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		cargo test || (echo "❌ BERT-Tch unit tests failed!" && exit 1)
+	@cd examples/bert-tch && \
+		LIBTORCH_USE_PYTORCH=1 \
+		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Tch tests passed"
 	@echo ""
 	@echo "✅ BERT-Tch example built and tested successfully!"

@@ -14,7 +14,7 @@ impl TensorBuilder<TchBackend> for TchTensorBuilder {
     ) -> Result<TchTensor, tch::TchError> {
         let data_f32 = T::as_f32_slice(data);
         let shape_i64: Vec<i64> = shape.iter().map(|&x| x as i64).collect();
-        let tensor = InternalTensor::from_slice(data_f32)
+        let tensor = InternalTensor::from_slice(&data_f32)
             .reshape(&shape_i64)
             .to_device(self.device);
         Ok(TchTensor(tensor))

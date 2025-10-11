@@ -44,8 +44,6 @@ impl BertModelWrapper {
         for (name, tensor_view) in tensors.tensors() {
             let shape: Vec<i64> = tensor_view.shape().iter().map(|&x| x as i64).collect();
 
-            let mapped_name = map_weight_name(name);
-
             let tensor_data = tensor_view.data();
             let dtype = match tensor_view.dtype() {
                 safetensors::Dtype::F32 => Kind::Float,
@@ -66,7 +64,7 @@ impl BertModelWrapper {
                 .lock()
                 .unwrap()
                 .named_variables
-                .insert(mapped_name, tensor);
+                .insert(name.to_string(), tensor);
         }
 
         Ok(Self {
@@ -115,20 +113,20 @@ impl BertModelWrapper {
 
         let token_type_ids = Tensor::zeros_like(input_ids);
 
-        let word_embeds = word_embeddings.index_select(0, input_ids);
-        let position_embeds = position_embeddings.index_select(0, &position_ids);
-        let token_type_embeds = token_type_embeddings.index_select(0, &token_type_ids);
+        let word_embeds = Tensor::embedding(word_embeddings, input_ids, -1, false, false);
+        let position_embeds = Tensor::embedding(position_embeddings, &position_ids, -1, false, false);
+        let token_type_embeds = Tensor::embedding(token_type_embeddings, &token_type_ids, -1, false, false);
 
         let embeddings = word_embeds + position_embeds + token_type_embeds;
 
         let layer_norm_weight = variables
             .named_variables
-            .get("bert.embeddings.LayerNorm.weight")
+            .get("bert.embeddings.LayerNorm.gamma")
             .ok_or_else(|| tch::TchError::FileFormat("Missing LayerNorm weight".into()))?;
 
         let layer_norm_bias = variables
             .named_variables
-            .get("bert.embeddings.LayerNorm.bias")
+            .get("bert.embeddings.LayerNorm.beta")
             .ok_or_else(|| tch::TchError::FileFormat("Missing LayerNorm bias".into()))?;
 
         let embeddings = embeddings.layer_norm(
@@ -197,8 +195,8 @@ impl BertModelWrapper {
         let dense_bias = self.get_variable(variables, &format!("{}.attention.output.dense.bias", prefix))?;
         let attention_output = context.linear(dense_weight, Some(dense_bias));
 
-        let layer_norm_weight = self.get_variable(variables, &format!("{}.attention.output.LayerNorm.weight", prefix))?;
-        let layer_norm_bias = self.get_variable(variables, &format!("{}.attention.output.LayerNorm.bias", prefix))?;
+        let layer_norm_weight = self.get_variable(variables, &format!("{}.attention.output.LayerNorm.gamma", prefix))?;
+        let layer_norm_bias = self.get_variable(variables, &format!("{}.attention.output.LayerNorm.beta", prefix))?;
 
         let attention_output = (attention_output + hidden_states).layer_norm(
             &[self.config.hidden_size],
@@ -238,8 +236,8 @@ impl BertModelWrapper {
 
         let output = intermediate.linear(dense_weight, Some(dense_bias));
 
-        let layer_norm_weight = self.get_variable(variables, &format!("{}.output.LayerNorm.weight", prefix))?;
-        let layer_norm_bias = self.get_variable(variables, &format!("{}.output.LayerNorm.bias", prefix))?;
+        let layer_norm_weight = self.get_variable(variables, &format!("{}.output.LayerNorm.gamma", prefix))?;
+        let layer_norm_bias = self.get_variable(variables, &format!("{}.output.LayerNorm.beta", prefix))?;
 
         let output = (output + attention_output).layer_norm(
             &[self.config.hidden_size],

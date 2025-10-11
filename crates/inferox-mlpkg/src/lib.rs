@@ -459,6 +459,65 @@ impl PackageManager {
             Ok(model)
         }
     }
+
+    #[cfg(feature = "tch")]
+    pub fn load_model_tch(
+        &self,
+        package: &ModelPackage,
+        backend_type: BackendType,
+    ) -> Result<
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_tch::TchBackend,
+                Input = inferox_tch::TchTensor,
+                Output = inferox_tch::TchTensor,
+            >,
+        >,
+    > {
+        let backend_dir = package.path.join("backends").join(backend_type.as_str());
+
+        #[cfg(target_os = "macos")]
+        let lib_name = "libmodel.dylib";
+        #[cfg(target_os = "windows")]
+        let lib_name = "model.dll";
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        let lib_name = "libmodel.so";
+
+        let library_path = backend_dir.join(lib_name);
+
+        if !library_path.exists() {
+            return Err(Error::InvalidFormat(format!(
+                "Model library not found: {:?}",
+                library_path
+            )));
+        }
+
+        std::env::set_var("INFEROX_PACKAGE_DIR", package.path.to_str().unwrap());
+
+        type BoxedTchModel = Box<
+            dyn inferox_core::Model<
+                Backend = inferox_tch::TchBackend,
+                Input = inferox_tch::TchTensor,
+                Output = inferox_tch::TchTensor,
+            >,
+        >;
+        type ModelFactory = fn() -> BoxedTchModel;
+
+        unsafe {
+            let lib = libloading::Library::new(&library_path)
+                .map_err(|e| Error::Generic(format!("Failed to load library: {}", e)))?;
+
+            let factory: libloading::Symbol<ModelFactory> = lib
+                .get(b"create_model")
+                .map_err(|e| Error::Generic(format!("Failed to get create_model symbol: {}", e)))?;
+
+            let model = factory();
+
+            std::mem::forget(lib);
+
+            Ok(model)
+        }
+    }
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {

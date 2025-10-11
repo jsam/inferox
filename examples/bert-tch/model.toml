@@ -1,0 +1,4 @@
+[model]
+name = "bert-tch"
+repo_id = "bert-base-uncased"
+backend = "Tch"
