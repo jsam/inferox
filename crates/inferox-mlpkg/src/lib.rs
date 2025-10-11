@@ -341,12 +341,14 @@ impl PackageManager {
     }
 
     /// Install compiled model library into package
-    pub fn install_model_library(
-        &self,
-        package: &ModelPackage,
-        backend: BackendType,
-        library_path: &Path,
-    ) -> Result<()> {
+    ///
+    /// The backend is automatically determined from the package's supported_backends metadata.
+    /// Uses the first backend in the supported_backends list.
+    pub fn install_model_library(&self, package: &ModelPackage, library_path: &Path) -> Result<()> {
+        let backend = package.info.supported_backends.first().ok_or_else(|| {
+            Error::InvalidFormat("No supported backends found in package metadata".to_string())
+        })?;
+
         let backend_dir = package.path.join("backends").join(backend.as_str());
 
         #[cfg(target_os = "macos")]
@@ -359,7 +361,11 @@ impl PackageManager {
         let target_path = backend_dir.join(lib_name);
         std::fs::copy(library_path, &target_path)?;
 
-        println!("Installed library at: {:?}", target_path);
+        println!(
+            "Installed library at: {:?} (backend: {})",
+            target_path,
+            backend.as_str()
+        );
         Ok(())
     }
 
@@ -378,7 +384,7 @@ impl PackageManager {
             .download_and_package(repo_id, None, &[BackendType::Candle])
             .await?;
 
-        manager.install_model_library(&package, BackendType::Candle, library_path)?;
+        manager.install_model_library(&package, library_path)?;
 
         if output_dir.exists() {
             std::fs::remove_dir_all(output_dir)?;

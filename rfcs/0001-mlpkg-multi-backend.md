@@ -581,17 +581,20 @@ impl ModelPackageManager {
     }
     
     /// Helper to install a compiled model library into a package
+    /// Backend is automatically determined from package.info.supported_backends[0]
     pub fn install_model_library(
         &self,
         package: &ModelPackage,
-        backend: BackendType,
         library_path: &Path,
     ) -> Result<()> {
+        let backend = package.info.supported_backends.first()
+            .ok_or_else(|| Error::InvalidFormat("No supported backends in metadata".to_string()))?;
+        
         let backend_dir = package.path().join(format!("backends/{}", backend.as_str()));
         let target_path = backend_dir.join(library_name());
         
         fs::copy(library_path, &target_path)?;
-        println!("Installed library at: {:?}", target_path);
+        println!("Installed library at: {:?} (backend: {})", target_path, backend.as_str());
         
         Ok(())
     }
@@ -643,9 +646,9 @@ let package = pm.download_and_package(
 // $ cp target/release/libbert_candle.so <package_dir>/backends/candle/libmodel.so
 
 // Step 4: Install compiled library into package
+// Backend is automatically determined from package metadata
 pm.install_model_library(
     &package,
-    BackendType::Candle,
     &PathBuf::from("target/release/libbert_candle.so"),
 )?;
 
@@ -672,16 +675,13 @@ let package = pm.download_and_package(
     &[BackendType::Candle, BackendType::Torch]
 ).await?;
 
-// Compile and install libraries for each backend
+// For multi-backend support, you would need to:
+// 1. Create separate packages with different supported_backends
+// 2. Or modify the package metadata to support multiple backends
+// The backend is automatically determined from supported_backends[0]
 pm.install_model_library(
     &package,
-    BackendType::Candle,
     &PathBuf::from("target/release/libbert_candle.so"),
-)?;
-pm.install_model_library(
-    &package,
-    BackendType::Torch,
-    &PathBuf::from("target/release/libbert_torch.so"),
 )?;
 
 // Load with Candle
@@ -870,10 +870,9 @@ async fn test_bert_end_to_end() {
         .status()?;
     assert!(status.success());
     
-    // Step 3: Install library
+    // Step 3: Install library (backend auto-detected from metadata)
     pm.install_model_library(
         &package,
-        BackendType::Candle,
         &PathBuf::from("target/release/libbert_candle.so"),
     )?;
     

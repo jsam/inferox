@@ -52,7 +52,7 @@ async fn test_bert_end_to_end() {
     let lib_path = workspace_root.join("target/release/libbert_candle.so");
 
     manager
-        .install_model_library(&package, BackendType::Candle, &lib_path)
+        .install_model_library(&package, &lib_path)
         .expect("Failed to install library");
 
     println!("5. Loading model using libloading...");
