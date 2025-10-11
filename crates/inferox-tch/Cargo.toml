@@ -1,0 +1,15 @@
+[package]
+name = "inferox-tch"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "PyTorch (tch-rs) backend implementation for Inferox"
+
+[dependencies]
+inferox-core = { version = "0.1.0", path = "../inferox-core" }
+tch.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]

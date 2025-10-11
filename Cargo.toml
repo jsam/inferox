@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/inferox-core",
     "crates/inferox-candle",
+    "crates/inferox-tch",
     "crates/inferox-engine",
     "crates/inferox-mlpkg",
     "crates/hf-xet-rs",
@@ -25,5 +26,6 @@ thiserror = "1.0"
 candle-core = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-nn = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-transformers = { git = "https://github.com/huggingface/candle", branch = "main" }
+tch = "0.17"
 
 
