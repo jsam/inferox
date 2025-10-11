@@ -40,7 +40,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum BackendType {
     /// Candle backend
     Candle,
-    /// LibTorch backend
+    /// LibTorch backend (tch-rs)
+    Tch,
+    /// PyTorch backend
     Torch,
     /// TensorFlow Lite backend
     TFLite,
@@ -51,6 +53,7 @@ impl BackendType {
     pub fn as_str(&self) -> &str {
         match self {
             BackendType::Candle => "candle",
+            BackendType::Tch => "tch",
             BackendType::Torch => "torch",
             BackendType::TFLite => "tflite",
         }

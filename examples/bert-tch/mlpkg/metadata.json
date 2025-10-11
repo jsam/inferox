@@ -1,0 +1,11 @@
+{
+  "name": "bert-tch",
+  "version": "1.0.0",
+  "description": "BERT base model using tch-rs backend",
+  "repo_id": "bert-base-uncased",
+  "backend": "Tch",
+  "files": [
+    "config.json",
+    "model.safetensors"
+  ]
+}
