@@ -11,6 +11,10 @@ members = [
     "examples/mlp/models/small",
     "examples/bert-candle",
 ]
+exclude = [
+    "crates/inferox-tch",
+    "examples/bert-tch",
+]
 
 
 [workspace.package]
@@ -25,5 +29,6 @@ thiserror = "1.0"
 candle-core = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-nn = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-transformers = { git = "https://github.com/huggingface/candle", branch = "main" }
+tch = "0.17"
 
 
