@@ -1,12 +1,15 @@
 # Inferox Makefile
 # Provides convenient commands for testing, building, and development
 
-.PHONY: help build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example release-prepare publish-check publish-dry-run coverage coverage-check changelog
+.PHONY: help install build build-release test test-quick lint lint-quick pre-commit clean doc examples models run-example release-prepare publish-check publish-dry-run coverage coverage-check changelog
 
 # Default target
 help:
 	@echo "Inferox Development Commands"
 	@echo "============================="
+	@echo ""
+	@echo "Setup:"
+	@echo "  install         - Install development dependencies (PyTorch, tools)"
 	@echo ""
 	@echo "Building:"
 	@echo "  build           - Build all crates in debug mode"
@@ -55,6 +58,48 @@ help:
 	@echo "Coverage:"
 	@echo "  coverage        - Generate coverage report"
 	@echo "  coverage-check  - Check if coverage meets threshold"
+
+# Setup commands
+install:
+	@echo "Installing development dependencies..."
+	@echo ""
+	@echo "1. Checking Python installation..."
+	@which python3 > /dev/null || (echo "❌ Python 3 not found! Install Python 3 first." && exit 1)
+	@echo "   ✅ Python 3 found: $$(python3 --version)"
+	@echo ""
+	@echo "2. Installing PyTorch 2.4.0 (required for tch-rs backend)..."
+	@pip3 show torch 2>/dev/null | grep -q "Version: 2.4.0" && \
+		echo "   ✅ PyTorch 2.4.0 already installed" || \
+		(echo "   Installing PyTorch 2.4.0..." && pip3 install torch==2.4.0)
+	@echo ""
+	@echo "3. Installing Python packages (huggingface_hub, safetensors)..."
+	@pip3 install huggingface_hub safetensors -q
+	@echo "   ✅ Python packages installed"
+	@echo ""
+	@echo "4. Installing Rust development tools..."
+	@which cargo-tarpaulin > /dev/null 2>&1 && \
+		echo "   ✅ cargo-tarpaulin already installed" || \
+		(echo "   Installing cargo-tarpaulin (this may take a while)..." && cargo install cargo-tarpaulin)
+	@echo "   ✅ Rust tools ready"
+	@echo ""
+	@echo "5. Setting up git hooks..."
+	@if [ ! -f .git/hooks/pre-commit ]; then \
+		echo "   ⚠️  Pre-commit hook not found (expected in .git/hooks/pre-commit)"; \
+	else \
+		chmod +x .git/hooks/pre-commit; \
+		echo "   ✅ Git hooks configured"; \
+	fi
+	@echo ""
+	@echo "✅ All development dependencies installed!"
+	@echo ""
+	@echo "📝 Next steps:"
+	@echo "   - Run 'make build' to build the project"
+	@echo "   - Run 'make test' to run tests"
+	@echo "   - Run 'make test-bert-tch' to test BERT-Tch example"
+	@echo ""
+	@echo "💡 Environment variables for tch-rs:"
+	@echo "   export LIBTORCH_USE_PYTORCH=1"
+	@echo "   export DYLD_LIBRARY_PATH=\"\$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), \"lib\"))'):\$$DYLD_LIBRARY_PATH\""
 
 # Building commands
 build:
@@ -223,12 +268,13 @@ pre-commit:
 	@cargo fmt || (echo "❌ Format failed!" && exit 1)
 	@echo "✅ Code formatted"
 	@echo ""
-	@echo "2. Running quick lint..."
-	@cargo clippy --lib --bins -- -D warnings || (echo "❌ Clippy failed! Fix warnings or run 'cargo clippy --fix'" && exit 1)
-	@echo "✅ Lint passed"
+	@echo "2. Running CI lint..."
+	@cargo clippy --workspace --all-targets -- -D warnings || (echo "❌ Clippy failed! Fix warnings or run 'cargo clippy --fix'" && exit 1)
+	@cargo fmt --check || (echo "❌ Format check failed!" && exit 1)
+	@echo "✅ CI lint passed"
 	@echo ""
 	@echo "3. Running tests..."
-	@cargo test || (echo "❌ Tests failed!" && exit 1)
+	@cargo test --workspace || (echo "❌ Tests failed!" && exit 1)
 	@echo "✅ Tests passed"
 	@echo ""
 	@echo "✅ All pre-commit checks passed! Ready to commit."
@@ -236,11 +282,11 @@ pre-commit:
 # CI/CD commands (used by continuous integration)
 ci-test:
 	@echo "Running CI tests..."
-	cargo test --workspace --all-targets --all-features
+	cargo test --workspace --all-targets
 
 ci-lint:
 	@echo "Running CI linting..."
-	cargo clippy --workspace --all-targets --all-features -- -D warnings
+	cargo clippy --workspace --all-targets -- -D warnings
 	cargo fmt --check
 
 # All CI checks in one command

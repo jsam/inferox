@@ -61,6 +61,32 @@ Inferox is a high-performance ML inference engine built in Rust, designed with a
 
 ## Quick Start
 
+### Prerequisites
+
+**Required:**
+- Rust 1.70+ (`rustup install stable`)
+- Python 3.8+ (for PyTorch/tch backend support)
+
+**Optional (for tch backend):**
+- PyTorch 2.4.0 (`pip3 install torch==2.4.0`)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/jsam/inferox.git
+cd inferox
+
+# Install all dependencies (PyTorch, tools, hooks)
+make install
+
+# Build the project
+make build
+
+# Run tests
+make test
+```
+
 ### 1. Define Your Model Architecture
 
 ```rust
@@ -261,6 +287,38 @@ See [examples/mlp/README.md](examples/mlp/README.md) for detailed documentation.
 
 - Rust 1.70+ (2021 edition)
 - Cargo
+- Python 3.8+ (for tch backend)
+- PyTorch 2.4.0 (for tch backend): `pip3 install torch==2.4.0`
+
+### Setup
+
+```bash
+# Install all development dependencies
+make install
+
+# This will:
+# - Install PyTorch 2.4.0
+# - Install Python packages (huggingface_hub, safetensors)
+# - Install Rust tools (cargo-tarpaulin)
+# - Set up git hooks
+```
+
+### Environment Variables (for tch backend)
+
+If you're working with the tch backend, you need to set these environment variables:
+
+```bash
+# Tell tch-rs to use PyTorch installation
+export LIBTORCH_USE_PYTORCH=1
+
+# macOS: Set library path for runtime
+export DYLD_LIBRARY_PATH="$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'):$DYLD_LIBRARY_PATH"
+
+# Linux: Set library path for runtime  
+export LD_LIBRARY_PATH="$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'):$LD_LIBRARY_PATH"
+```
+
+**Tip:** Add these to your `~/.bashrc` or `~/.zshrc` for persistence.
 
 ### Building
 
