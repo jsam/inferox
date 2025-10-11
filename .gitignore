@@ -28,10 +28,12 @@ release.toml.bak
 .hftoken
 *.hftoken
 
+crates/inferox-tch/target/
+
 # Integration test artifacts
 crates/hf-xet-rs/test-cache/
 
 
-examples/bert-tch/target
+examples/bert-tch/target/
 examples/bert-tch/mlpkg/
-examples/bert-tch/examples
+examples/bert-tch/examples/

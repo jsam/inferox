@@ -114,4 +114,20 @@ mod tests {
         let backend = TchBackend::with_device(TchDevice::Cpu);
         assert_eq!(backend.name(), "tch");
     }
+
+    #[test]
+    fn test_new_backend() {
+        let backend = TchBackend::new().unwrap();
+        assert_eq!(backend.name(), "tch");
+        let device = backend.default_device();
+        assert!(device.is_available());
+    }
+
+    #[test]
+    fn test_cuda_when_not_available() {
+        let result = TchBackend::cuda(0);
+        if !tch::Cuda::is_available() {
+            assert!(result.is_err());
+        }
+    }
 }

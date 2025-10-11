@@ -63,4 +63,24 @@ mod tests {
         let device: TchDeviceWrapper = tch_device.into();
         assert_eq!(device.id(), DeviceId::Cpu);
     }
+
+    #[test]
+    fn test_cuda_device_id() {
+        let device = TchDeviceWrapper(TchDevice::Cuda(0));
+        assert_eq!(device.id(), DeviceId::Cuda(0));
+    }
+
+    #[test]
+    fn test_mps_device() {
+        let device = TchDeviceWrapper(TchDevice::Mps);
+        assert_eq!(device.id(), DeviceId::Metal(0));
+        assert!(!device.is_available());
+    }
+
+    #[test]
+    fn test_vulkan_device() {
+        let device = TchDeviceWrapper(TchDevice::Vulkan);
+        assert_eq!(device.id(), DeviceId::Cpu);
+        assert!(!device.is_available());
+    }
 }

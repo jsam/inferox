@@ -95,7 +95,7 @@ impl From<InternalTensor> for TchTensor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use inferox_core::Tensor;
+    use inferox_core::{Device, Tensor};
 
     #[test]
     fn test_tensor_shape() {
@@ -137,5 +137,57 @@ mod tests {
         let tensor: TchTensor = t.into();
         let shape = tensor.shape();
         assert_eq!(shape.len(), 2);
+    }
+
+    #[test]
+    fn test_tensor_clone() {
+        let t = tch::Tensor::zeros(&[2, 3], (TchKind::Float, tch::Device::Cpu));
+        let tensor = TchTensor(t);
+        let cloned = tensor.clone();
+        assert_eq!(cloned.shape(), tensor.shape());
+    }
+
+    #[test]
+    fn test_tensor_to_device() {
+        let t = tch::Tensor::zeros(&[2, 3], (TchKind::Float, tch::Device::Cpu));
+        let tensor = TchTensor(t);
+        let device = TchDeviceWrapper(tch::Device::Cpu);
+        let moved = tensor.to_device(&device).unwrap();
+        assert_eq!(moved.device().id(), inferox_core::DeviceId::Cpu);
+    }
+
+    #[test]
+    fn test_tensor_contiguous() {
+        let t = tch::Tensor::zeros(&[2, 3], (TchKind::Float, tch::Device::Cpu));
+        let tensor = TchTensor(t);
+        let contiguous = tensor.contiguous().unwrap();
+        assert_eq!(contiguous.shape(), tensor.shape());
+    }
+
+    #[test]
+    fn test_dtype_wrapper_all_types() {
+        assert_eq!(TchDTypeWrapper(TchKind::Double).name(), "f64");
+        assert_eq!(TchDTypeWrapper(TchKind::Int).name(), "i32");
+        assert_eq!(TchDTypeWrapper(TchKind::Int64).name(), "i64");
+        assert_eq!(TchDTypeWrapper(TchKind::Uint8).name(), "u8");
+        assert_eq!(TchDTypeWrapper(TchKind::Int8).name(), "i8");
+        assert_eq!(TchDTypeWrapper(TchKind::Int16).name(), "i16");
+        assert_eq!(TchDTypeWrapper(TchKind::Half).name(), "f16");
+        assert_eq!(TchDTypeWrapper(TchKind::BFloat16).name(), "bf16");
+        assert_eq!(TchDTypeWrapper(TchKind::Bool).name(), "bool");
+    }
+
+    #[test]
+    fn test_dtype_wrapper_sizes() {
+        assert_eq!(TchDTypeWrapper(TchKind::Double).size(), 8);
+        assert_eq!(TchDTypeWrapper(TchKind::Int64).size(), 8);
+        assert_eq!(TchDTypeWrapper(TchKind::Float).size(), 4);
+        assert_eq!(TchDTypeWrapper(TchKind::Int).size(), 4);
+        assert_eq!(TchDTypeWrapper(TchKind::Half).size(), 2);
+        assert_eq!(TchDTypeWrapper(TchKind::BFloat16).size(), 2);
+        assert_eq!(TchDTypeWrapper(TchKind::Int16).size(), 2);
+        assert_eq!(TchDTypeWrapper(TchKind::Uint8).size(), 1);
+        assert_eq!(TchDTypeWrapper(TchKind::Int8).size(), 1);
+        assert_eq!(TchDTypeWrapper(TchKind::Bool).size(), 1);
     }
 }
