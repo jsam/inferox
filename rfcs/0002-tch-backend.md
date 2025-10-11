@@ -267,11 +267,76 @@ bert-base-uncased/
 - [x] Add platform-specific build instructions (Linux, macOS, Windows)
 - [x] Update workspace documentation
 
-### Phase 3: Example Implementation
+### Phase 3: Example Implementation (In Progress)
 
-- [ ] Create `examples/bert-tch` similar to `examples/bert-candle`
-- [ ] Implement model loading from PyTorch weights
-- [ ] Add E2E tests demonstrating PyTorch model inference
+**Goal:** Create BERT example using inferox-tch backend with full E2E testing
+
+#### Architecture
+```
+examples/bert-tch/
+├── Cargo.toml              # cdylib package with tch dependencies
+├── build.rs                # Package assembly via BuildScriptRunner
+├── src/
+│   └── lib.rs              # BERT implementation using tch-rs
+└── tests/
+    └── e2e_test.rs         # E2E tests (package loading + engine integration)
+```
+
+#### Implementation Approach
+
+**BERT Model Loading Strategy:**
+- **Option A:** Manual BERT implementation using tch::nn modules (complex, flexible)
+- **Option B:** Load TorchScript model via tch::CModule (simpler, recommended) ✅
+- **Option C:** Use safetensors + manual tensor loading (medium complexity)
+
+**Selected: Option B (TorchScript)** - Most reliable, leverages PyTorch's maturity
+
+#### Components
+
+**1. Model Wrapper (`BertModelWrapper`)**
+```rust
+pub struct BertModelWrapper {
+    name: String,
+    model: tch::CModule,  // TorchScript module
+}
+
+impl Model for BertModelWrapper {
+    type Backend = TchBackend;
+    type Input = TchTensor;
+    type Output = TchTensor;
+    
+    fn forward(&self, input: TchTensor) -> Result<TchTensor, tch::TchError> {
+        // Convert to IValue, run model, extract output
+    }
+}
+```
+
+**2. Weight Loading**
+- Safetensors → tch::Tensor conversion using `safetensors` crate
+- HF weight name mapping (e.g., `bert.encoder.layer.0.attention.self.query.weight`)
+- Dtype and device handling
+
+**3. Package Assembly**
+- BuildScriptRunner downloads bert-base-uncased from HF Hub
+- Copies config.json and model.safetensors
+- Compiles cdylib and assembles to target/mlpkg/bert-tch/
+
+**4. E2E Tests**
+- Test 1: Package loading + direct inference
+- Test 2: Integration with InferoxEngine
+- Validation: Output shape [1, seq_len, 768]
+
+#### Tasks
+
+- [ ] Create project structure and Cargo.toml
+- [ ] Implement BertModelWrapper with TorchScript loading
+- [ ] Add safetensors weight loading
+- [ ] Implement create_model() export function
+- [ ] Add build.rs with BuildScriptRunner
+- [ ] Write E2E test: package loading
+- [ ] Write E2E test: engine integration
+- [ ] Add Makefile target: test-bert-tch
+- [ ] Document usage in README
 - [ ] Performance benchmarking vs. Candle backend
 
 ### Phase 4: Integration with inferox-mlpkg
