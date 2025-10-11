@@ -123,6 +123,8 @@ let mut engine = Engine::new(backend);
 
 ## Development
 
+**Important:** This crate is excluded from the main Inferox workspace to avoid requiring LibTorch for normal development. To work with this crate, you must build it explicitly.
+
 ### Running Tests
 
 Tests require LibTorch to be installed:
@@ -136,6 +138,14 @@ cargo test -p inferox-tch
 ```bash
 cargo build -p inferox-tch
 ```
+
+### Workspace Integration
+
+The tch backend is excluded from the main workspace (`Cargo.toml`) to prevent build failures when LibTorch is not installed. This means:
+
+- Regular `cargo build` and `cargo test` commands skip this crate
+- You must explicitly specify `-p inferox-tch` to build/test it
+- CI/CD pipelines don't require LibTorch installation
 
 ### CI/CD Considerations
 

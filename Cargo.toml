@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "crates/inferox-core",
     "crates/inferox-candle",
-    "crates/inferox-tch",
     "crates/inferox-engine",
     "crates/inferox-mlpkg",
     "crates/hf-xet-rs",
@@ -11,6 +10,9 @@ members = [
     "examples/mlp/models/classifier",
     "examples/mlp/models/small",
     "examples/bert-candle",
+]
+exclude = [
+    "crates/inferox-tch",
 ]
 
 

@@ -199,11 +199,11 @@ pre-commit:
 # CI/CD commands (used by continuous integration)
 ci-test:
 	@echo "Running CI tests..."
-	cargo test --workspace --exclude inferox-tch --all-targets --all-features
+	cargo test --workspace --all-targets --all-features
 
 ci-lint:
 	@echo "Running CI linting..."
-	cargo clippy --workspace --exclude inferox-tch --all-targets --all-features -- -D warnings
+	cargo clippy --workspace --all-targets --all-features -- -D warnings
 	cargo fmt --check
 
 # All CI checks in one command
@@ -284,7 +284,7 @@ coverage:
 	@echo "Generating coverage report..."
 	@mkdir -p target/coverage
 	@cargo tarpaulin \
-		--workspace --exclude inferox-tch \
+		--workspace \
 		--out Html \
 		--out Json \
 		--out Xml \
@@ -301,7 +301,7 @@ coverage-check:
 	@echo "Checking coverage threshold..."
 	@mkdir -p target/coverage
 	@cargo tarpaulin \
-		--workspace --exclude inferox-tch \
+		--workspace \
 		--out Json \
 		--output-dir target/coverage \
 		--exclude-files 'examples/*' \

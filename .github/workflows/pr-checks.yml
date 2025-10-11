@@ -101,7 +101,7 @@ jobs:
       run: make ci-test
     
     - name: Run doctests
-      run: cargo test --workspace --exclude inferox-tch --doc
+      run: cargo test --workspace --doc
 
   # Build model libraries
   models:
@@ -162,7 +162,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-doc-
     
     - name: Build documentation
-      run: cargo doc --workspace --exclude inferox-tch --no-deps
+      run: cargo doc --workspace --no-deps
       env:
         RUSTDOCFLAGS: -D warnings
 
