@@ -162,7 +162,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-doc-
     
     - name: Build documentation
-      run: cargo doc --no-deps
+      run: cargo doc --workspace --exclude inferox-tch --no-deps
       env:
         RUSTDOCFLAGS: -D warnings
 
