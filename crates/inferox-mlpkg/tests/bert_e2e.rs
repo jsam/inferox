@@ -18,10 +18,7 @@ async fn test_bert_end_to_end() {
 
     println!("2. Package created at: {:?}", package.path());
     println!("   Model type: {}", package.info().model_type);
-    println!(
-        "   Architecture: {:?}",
-        package.info().architecture_family
-    );
+    println!("   Architecture: {:?}", package.info().architecture_family);
 
     println!("3. Compiling bert-candle library...");
     let workspace_root = std::env::current_dir()

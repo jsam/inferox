@@ -21,7 +21,7 @@ help:
 	@echo "  test-candle       - Run Candle backend tests only"
 	@echo "  test-engine       - Run engine tests only"
 	@echo "  test-examples     - Run example tests"
-	@echo "  test-all-examples - Build and test ALL examples (MLP + BERT)"
+	@echo "  test-all-examples - Build and test ALL examples (MLP + BERT with package assembly)"
 	@echo ""
 	@echo "Development:"
 	@echo "  pre-commit      - Quick pre-commit checks (format + lint + test)"
@@ -113,11 +113,23 @@ test-all-examples:
 	@cargo test -p mlp || (echo "❌ MLP tests failed!" && exit 1)
 	@echo "✅ MLP tests passed"
 	@echo ""
-	@echo "3. Building BERT-Candle example..."
-	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle build failed!" && exit 1)
-	@echo "✅ BERT-Candle built and package assembled"
+	@echo "3. Building BERT-Candle library..."
+	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle library build failed!" && exit 1)
+	@echo "✅ BERT-Candle library built"
 	@echo ""
-	@echo "4. Testing BERT-Candle example (including e2e tests)..."
+	@echo "4. Assembling BERT-Candle package..."
+	@touch examples/bert-candle/build.rs
+	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle package assembly failed!" && exit 1)
+	@echo "✅ BERT-Candle package assembled"
+	@echo ""
+	@echo "5. Verifying package exists..."
+	@if [ ! -d "target/mlpkg/bert-candle" ]; then \
+		echo "❌ Package directory not found at target/mlpkg/bert-candle"; \
+		exit 1; \
+	fi
+	@echo "✅ Package verified at target/mlpkg/bert-candle"
+	@echo ""
+	@echo "6. Testing BERT-Candle example (including e2e tests)..."
 	@cargo test -p bert-candle || (echo "❌ BERT-Candle unit tests failed!" && exit 1)
 	@cargo test --test e2e_test -p bert-candle -- --ignored --nocapture || (echo "❌ BERT-Candle e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Candle tests passed"

@@ -246,25 +246,25 @@ impl PackageManager {
         let metadata = serde_json::from_str(&content)?;
         Ok(metadata)
     }
-    
+
     /// Load complete model package from directory
-    /// 
+    ///
     /// This reads both metadata.json and model_info.json from the package directory
     /// and returns a complete ModelPackage ready for loading.
     pub fn load_package(&self, package_path: &std::path::Path) -> Result<ModelPackage> {
         let metadata_path = package_path.join("metadata.json");
         let model_info_path = package_path.join("model_info.json");
-        
+
         let metadata_content = std::fs::read_to_string(&metadata_path)
             .map_err(|e| Error::InvalidFormat(format!("Failed to read metadata.json: {}", e)))?;
         let metadata: PackageMetadata = serde_json::from_str(&metadata_content)
             .map_err(|e| Error::InvalidFormat(format!("Failed to parse metadata.json: {}", e)))?;
-        
+
         let model_info_content = std::fs::read_to_string(&model_info_path)
             .map_err(|e| Error::InvalidFormat(format!("Failed to read model_info.json: {}", e)))?;
         let info: ModelInfo = serde_json::from_str(&model_info_content)
             .map_err(|e| Error::InvalidFormat(format!("Failed to parse model_info.json: {}", e)))?;
-        
+
         Ok(ModelPackage {
             path: package_path.to_path_buf(),
             info,
@@ -473,7 +473,7 @@ pub struct BuildScriptRunner {
 
 impl BuildScriptRunner {
     /// Create a new build script runner
-    /// 
+    ///
     /// # Arguments
     /// * `model_name` - Name of the model (e.g., "bert-candle")
     pub fn new(model_name: impl Into<String>) -> Self {
@@ -481,29 +481,27 @@ impl BuildScriptRunner {
             model_name: model_name.into(),
         }
     }
-    
+
     /// Run the build script assembly process
-    /// 
-    /// Call this from your build.rs main():
+    ///
+    /// Call this from your build.rs:
     /// ```no_run
-    /// fn main() {
-    ///     inferox_mlpkg::BuildScriptRunner::new("bert-candle").run();
-    /// }
+    /// inferox_mlpkg::BuildScriptRunner::new("bert-candle").run();
     /// ```
     pub fn run(&self) {
         use std::env;
-        
+
         println!("cargo:rerun-if-changed=build.rs");
         println!("cargo:rerun-if-changed=model.toml");
-        
+
         let profile = env::var("PROFILE").unwrap_or_default();
         if profile != "release" {
             return;
         }
-        
+
         let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
         let model_toml_path = manifest_dir.join("model.toml");
-        
+
         let model_toml_content = match std::fs::read_to_string(&model_toml_path) {
             Ok(content) => content,
             Err(_) => {
@@ -511,50 +509,48 @@ impl BuildScriptRunner {
                 return;
             }
         };
-        
+
         let repo_id = model_toml_content
             .lines()
             .find(|line| line.starts_with("repo_id"))
             .and_then(|line| line.split('=').nth(1))
             .map(|s| s.trim().trim_matches('"'))
             .expect("repo_id not found in model.toml");
-        
+
         let workspace_root = manifest_dir.parent().unwrap().parent().unwrap();
-        
+
         #[cfg(target_os = "macos")]
         let lib_ext = "dylib";
         #[cfg(target_os = "windows")]
         let lib_ext = "dll";
         #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         let lib_ext = "so";
-        
+
         let lib_name = if cfg!(target_os = "windows") {
             format!("{}.{}", self.model_name.replace("-", "_"), lib_ext)
         } else {
             format!("lib{}.{}", self.model_name.replace("-", "_"), lib_ext)
         };
-        
+
         let lib_path = workspace_root.join("target").join(&profile).join(&lib_name);
-        
+
         if !lib_path.exists() {
-            println!("cargo:warning=Library not yet built - package will be assembled on next build");
+            println!(
+                "cargo:warning=Library not yet built - package will be assembled on next build"
+            );
             return;
         }
-        
+
         let output_dir = workspace_root
             .join("target")
             .join("mlpkg")
             .join(&self.model_name);
-        
+
         println!("cargo:warning=Assembling package from {}", repo_id);
-        
+
         let rt = tokio::runtime::Runtime::new().unwrap();
         match rt.block_on(async {
-            PackageManager::assemble_package(
-                repo_id,
-                &lib_path,
-                &output_dir,
-            ).await
+            PackageManager::assemble_package(repo_id, &lib_path, &output_dir).await
         }) {
             Ok(_) => {
                 println!("cargo:warning=✓ Package ready at {}", output_dir.display());

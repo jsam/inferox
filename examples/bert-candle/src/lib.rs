@@ -31,20 +31,14 @@ impl Model for BertModelWrapper {
         }
     }
 
-    fn forward(
-        &self,
-        input: Self::Input,
-    ) -> Result<Self::Output, candle_core::Error> {
+    fn forward(&self, input: Self::Input) -> Result<Self::Output, candle_core::Error> {
         let input_tensor: InternalTensor = input.into();
-        
+
         let input_tensor = input_tensor.to_dtype(DType::U32)?;
 
-        let token_type_ids = input_tensor
-            .zeros_like()?;
+        let token_type_ids = input_tensor.zeros_like()?;
 
-        let output = self
-            .inner
-            .forward(&input_tensor, &token_type_ids, None)?;
+        let output = self.inner.forward(&input_tensor, &token_type_ids, None)?;
 
         Ok(CandleTensor::from(output))
     }
@@ -62,8 +56,7 @@ pub fn create_model() -> BoxedCandleModel {
     let config_path = package_path.join("config.json");
     let weights_path = package_path.join("model.safetensors");
 
-    let config_str =
-        std::fs::read_to_string(&config_path).expect("Failed to read config.json");
+    let config_str = std::fs::read_to_string(&config_path).expect("Failed to read config.json");
     let config: Config = serde_json::from_str(&config_str).expect("Failed to parse config.json");
 
     let device = Device::Cpu;
@@ -72,7 +65,7 @@ pub fn create_model() -> BoxedCandleModel {
         VarBuilder::from_mmaped_safetensors(&[weights_path], DType::F32, &device)
             .expect("Failed to load weights from safetensors")
     };
-    
+
     let vb = vb.rename_f(|name| {
         let prefixed = format!("bert.{}", name);
         if prefixed.contains("LayerNorm") {
