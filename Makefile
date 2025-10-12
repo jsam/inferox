@@ -195,29 +195,38 @@ test-bert-tch:
 	@python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" || (echo "❌ PyTorch not found! Install with: pip3 install torch==2.4.0" && exit 1)
 	@echo ""
 	@echo "1. Building BERT-Tch library..."
-	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release || (echo "❌ BERT-Tch library build failed!" && exit 1)
+	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release --lib || (echo "❌ BERT-Tch library build failed!" && exit 1)
 	@echo "✅ BERT-Tch library built"
 	@echo ""
-	@echo "2. Assembling BERT-Tch package..."
+	@echo "2. Copying library to workspace target..."
+	@mkdir -p target/release
+	@cp examples/bert-tch/target/release/libbert_tch.* target/release/ 2>/dev/null || \
+		cp examples/bert-tch/target/release/bert_tch.dll target/release/ 2>/dev/null || \
+		(echo "❌ Failed to copy library" && exit 1)
+	@echo "✅ Library copied"
+	@echo ""
+	@echo "3. Assembling BERT-Tch package (via build script)..."
 	@touch examples/bert-tch/build.rs
-	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release || (echo "❌ BERT-Tch package assembly failed!" && exit 1)
+	@cd examples/bert-tch && BERT_REPO_ID=bert-base-uncased LIBTORCH_USE_PYTORCH=1 cargo build --release --lib || (echo "❌ BERT-Tch package assembly failed!" && exit 1)
 	@echo "✅ BERT-Tch package assembled"
 	@echo ""
-	@echo "3. Verifying package exists..."
+	@echo "4. Verifying package exists..."
 	@if [ ! -d "target/mlpkg/bert-tch" ]; then \
 		echo "❌ Package directory not found at target/mlpkg/bert-tch"; \
 		exit 1; \
 	fi
 	@echo "✅ Package verified at target/mlpkg/bert-tch"
 	@echo ""
-	@echo "4. Testing BERT-Tch example (including e2e tests)..."
+	@echo "5. Testing BERT-Tch example (including e2e tests)..."
 	@cd examples/bert-tch && \
 		LIBTORCH_USE_PYTORCH=1 \
 		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		LD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$LD_LIBRARY_PATH \
 		cargo test || (echo "❌ BERT-Tch unit tests failed!" && exit 1)
 	@cd examples/bert-tch && \
 		LIBTORCH_USE_PYTORCH=1 \
 		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		LD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$LD_LIBRARY_PATH \
 		cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Tch tests passed"
 
