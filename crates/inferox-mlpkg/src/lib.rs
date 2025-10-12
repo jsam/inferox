@@ -316,7 +316,11 @@ fn detect_architecture(config: &HFConfig) -> Result<ArchitectureFamily> {
 }
 
 /// Create ModelInfo from HF config
-fn create_model_info(repo_id: &str, config: &HFConfig) -> Result<ModelInfo> {
+fn create_model_info(
+    repo_id: &str,
+    config: &HFConfig,
+    backends: &[BackendType],
+) -> Result<ModelInfo> {
     Ok(ModelInfo {
         model_type: config
             .model_type
@@ -324,7 +328,7 @@ fn create_model_info(repo_id: &str, config: &HFConfig) -> Result<ModelInfo> {
             .ok_or_else(|| Error::Generic("Missing model_type".to_string()))?,
         repo_id: repo_id.to_string(),
         architecture_family: detect_architecture(config)?,
-        supported_backends: vec![BackendType::Candle],
+        supported_backends: backends.to_vec(),
         device: Some("cpu".to_string()), // Default device
         hidden_size: config.hidden_size,
         num_layers: config.num_hidden_layers,
@@ -424,7 +428,7 @@ impl PackageManager {
         // 2. Parse config
         let config_path = snapshot_path.join("config.json");
         let hf_config = parse_hf_config(&config_path)?;
-        let model_info = create_model_info(repo_id, &hf_config)?;
+        let model_info = create_model_info(repo_id, &hf_config, backends)?;
 
         // 3. Create package directory
         let package_dir = self
@@ -445,15 +449,13 @@ impl PackageManager {
             // Copy config
             std::fs::copy(&config_path, backend_dir.join("config.json"))?;
 
-            // Copy weight files (safetensors for candle)
-            if *backend == BackendType::Candle {
-                for entry in std::fs::read_dir(&snapshot_path)? {
-                    let entry = entry?;
-                    let path = entry.path();
-                    if path.extension().and_then(|s| s.to_str()) == Some("safetensors") {
-                        let filename = entry.file_name();
-                        std::fs::copy(&path, backend_dir.join(filename))?;
-                    }
+            // Copy weight files (safetensors for both Candle and Tch)
+            for entry in std::fs::read_dir(&snapshot_path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("safetensors") {
+                    let filename = entry.file_name();
+                    std::fs::copy(&path, backend_dir.join(filename))?;
                 }
             }
         }
@@ -513,6 +515,7 @@ impl PackageManager {
         repo_id: &str,
         library_path: &Path,
         output_dir: &Path,
+        backend: BackendType,
     ) -> Result<ModelPackage> {
         let temp_cache = std::env::temp_dir().join("inferox-mlpkg-cache");
         std::fs::create_dir_all(&temp_cache)?;
@@ -520,7 +523,7 @@ impl PackageManager {
         let manager = PackageManager::new(temp_cache)?;
 
         let package = manager
-            .download_and_package(repo_id, None, &[BackendType::Candle])
+            .download_and_package(repo_id, None, &[backend])
             .await?;
 
         manager.install_model_library(&package, library_path)?;
@@ -842,6 +845,22 @@ impl BuildScriptRunner {
             .map(|s| s.trim().trim_matches('"'))
             .expect("repo_id not found in model.toml");
 
+        let backend_str = model_toml_content
+            .lines()
+            .find(|line| line.starts_with("backend"))
+            .and_then(|line| line.split('=').nth(1))
+            .map(|s| s.trim().trim_matches('"'))
+            .expect("backend not found in model.toml");
+
+        let backend = match backend_str.to_lowercase().as_str() {
+            "candle" => BackendType::Candle,
+            "tch" => BackendType::Tch,
+            other => panic!(
+                "Unsupported backend: {} (valid options: candle, tch)",
+                other
+            ),
+        };
+
         let workspace_root = manifest_dir.parent().unwrap().parent().unwrap();
 
         #[cfg(target_os = "macos")]
@@ -875,7 +894,7 @@ impl BuildScriptRunner {
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         match rt.block_on(async {
-            PackageManager::assemble_package(repo_id, &lib_path, &output_dir).await
+            PackageManager::assemble_package(repo_id, &lib_path, &output_dir, backend).await
         }) {
             Ok(_) => {
                 println!("cargo:warning=✓ Package ready at {}", output_dir.display());

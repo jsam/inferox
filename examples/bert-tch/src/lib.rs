@@ -30,8 +30,9 @@ impl BertModelWrapper {
         package_dir: &PathBuf,
         device: Device,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let config_path = package_dir.join("config.json");
-        let weights_path = package_dir.join("model.safetensors");
+        let backend_dir = package_dir.join("backends").join("tch");
+        let config_path = backend_dir.join("config.json");
+        let weights_path = backend_dir.join("model.safetensors");
 
         let config_str = std::fs::read_to_string(&config_path)?;
         let config: BertConfig = serde_json::from_str(&config_str)?;
