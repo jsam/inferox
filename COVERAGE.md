@@ -432,19 +432,19 @@ Track progress by marking items as complete: `[ ]` → `[x]`
 - [ ] Test invalid configuration
 
 ### Multi-Backend BERT E2E (`examples/bert-multi-backend/tests/e2e_test.rs`)
-- [ ] Create new test module `examples/bert-multi-backend/`
-- [ ] Test loading both bert-candle and bert-tch packages
-- [ ] Test registering both models in single engine
-- [ ] Test routing inference to Candle model based on request metadata
-- [ ] Test routing inference to Tch model based on request metadata
-- [ ] Test consolidated response format (unified tensor type)
-- [ ] Test response tensor type conversion (Candle → unified)
-- [ ] Test response tensor type conversion (Tch → unified)
-- [ ] Test backend selection via request metadata field
-- [ ] Test fallback when preferred backend unavailable
-- [ ] Test concurrent requests to both backends
-- [ ] Test output consistency between backends (numerical comparison)
-- [ ] Test performance comparison between backends
+- [x] Create new test module `examples/bert-multi-backend/`
+- [x] Test loading both bert-candle and bert-tch packages
+- [x] Test registering both models in single engine
+- [x] Test routing inference to Candle model based on request metadata
+- [x] Test routing inference to Tch model based on request metadata
+- [x] Test consolidated response format (unified tensor type)
+- [x] Test response tensor type conversion (Candle → unified)
+- [x] Test response tensor type conversion (Tch → unified)
+- [x] Test backend selection via request metadata field
+- [x] Test fallback when preferred backend unavailable (via Auto selection)
+- [x] Test concurrent requests to both backends
+- [x] Test output consistency between backends (numerical comparison)
+- [x] Test performance comparison between backends
 - [ ] Test error handling when one backend fails
 - [ ] Test graceful degradation when backend unavailable
 
@@ -556,11 +556,11 @@ Total items: ~450 test cases
 **Phase 4 (inferox-candle)**: 0/45 (0%)
 **Phase 5 (inferox-tch)**: 0/28 (0%)
 **Phase 6 (hf-xet-rs)**: 87/108 (81%)
-**Phase 7 (Examples)**: 8/46 (17%)
+**Phase 7 (Examples)**: 21/46 (46%)
 **Phase 8 (Integration)**: 0/23 (0%)
 **Phase 9 (Performance)**: 0/16 (0%)
 
-**Overall Progress**: 126/445 (28%)
+**Overall Progress**: 139/445 (31%)
 
 ---
 

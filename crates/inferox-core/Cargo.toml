@@ -9,5 +9,6 @@ description = "Core traits and types for Inferox ML inference library"
 
 [dependencies]
 thiserror.workspace = true
+serde.workspace = true
 
 [dev-dependencies]

@@ -131,7 +131,7 @@ async fn test_bert_tch_with_inferox_engine() {
     let model_name = model.name().to_string();
 
     println!("3. Registering model with engine...");
-    engine.register_model(model);
+    engine.register_model(&model_name, model, None);
 
     println!("   Input shape: {:?}", [1, 6]);
     let input_ids: Vec<i64> = vec![101, 2023, 2003, 1037, 3231, 102];

@@ -36,7 +36,7 @@ impl InferenceSession {
     where
         B::Tensor: 'static,
     {
-        self.engine.infer::<B>(&self.model_name, input)
+        self.engine.infer_typed::<B>(&self.model_name, input)
     }
 
     pub fn set_batch_size(&mut self, batch_size: usize) {
@@ -89,7 +89,7 @@ mod tests {
             Box::new(DummyModel {
                 name: "test".to_string(),
             });
-        engine.register_model(model);
+        engine.register_model("test", model, None);
 
         let engine_arc = Arc::new(engine);
         let session = InferenceSession::new(engine_arc, "test".to_string());
@@ -108,7 +108,7 @@ mod tests {
             Box::new(DummyModel {
                 name: "test".to_string(),
             });
-        engine.register_model(model);
+        engine.register_model("test", model, None);
 
         let engine_arc = Arc::new(engine);
         let mut session = InferenceSession::new(engine_arc, "test".to_string());

@@ -175,18 +175,18 @@ fn test_mlp_with_inferox_engine() {
     let classifier_model = load_model_from_library(classifier_path.to_str().unwrap())
         .expect("Failed to load classifier model");
     let classifier_name = classifier_model.name().to_string();
-    engine.register_model(classifier_model);
+    engine.register_model(&classifier_name, classifier_model, None);
     println!("   ✓ Registered: {}", classifier_name);
 
     println!("   Loading small model...");
     let small_model =
         load_model_from_library(small_path.to_str().unwrap()).expect("Failed to load small model");
     let small_name = small_model.name().to_string();
-    engine.register_model(small_model);
+    engine.register_model(&small_name, small_model, None);
     println!("   ✓ Registered: {}", small_name);
 
     println!("\n3. Listing registered models...");
-    let models = engine.list_models();
+    let models = engine.list_models_with_metadata();
     println!("   Available models: {}", models.len());
     for (name, metadata) in &models {
         println!(
@@ -209,7 +209,7 @@ fn test_mlp_with_inferox_engine() {
     println!("   Input data: {:?}", classifier_input);
 
     let classifier_output = engine
-        .infer::<CandleBackend>(&classifier_name, classifier_tensor)
+        .infer_typed::<CandleBackend>(&classifier_name, classifier_tensor)
         .expect("Classifier inference failed");
 
     println!("   Output shape: {:?}", classifier_output.shape());
@@ -227,7 +227,7 @@ fn test_mlp_with_inferox_engine() {
     println!("   Input data: {:?}", small_input);
 
     let small_output = engine
-        .infer::<CandleBackend>(&small_name, small_tensor)
+        .infer_typed::<CandleBackend>(&small_name, small_tensor)
         .expect("Small model inference failed");
 
     println!("   Output shape: {:?}", small_output.shape());
@@ -297,7 +297,7 @@ fn test_mlp_engine_model_not_found() {
         .build_from_vec(vec![1.0f32; 10], &[1, 10])
         .expect("Failed to create input");
 
-    let result = engine.infer::<CandleBackend>("nonexistent-model", input);
+    let result = engine.infer_typed::<CandleBackend>("nonexistent-model", input);
 
     assert!(
         result.is_err(),

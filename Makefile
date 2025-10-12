@@ -230,6 +230,24 @@ test-bert-tch:
 		cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Tch tests passed"
 
+test-bert-multi-backend:
+	@echo ""
+	@echo "=== Testing Multi-Backend BERT Example ==="
+	@echo ""
+	@echo "This test requires both BERT-Candle and BERT-Tch packages."
+	@echo "Running prerequisites..."
+	@$(MAKE) test-bert-candle
+	@$(MAKE) test-bert-tch
+	@echo ""
+	@echo "Running multi-backend E2E tests..."
+	@cd examples/bert-multi-backend && \
+		LIBTORCH_USE_PYTORCH=1 \
+		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		LD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$LD_LIBRARY_PATH \
+		cargo test -- --ignored --nocapture || (echo "❌ Multi-backend tests failed!" && exit 1)
+	@echo ""
+	@echo "✅ Multi-backend BERT tests passed!"
+
 lint-quick:
 	@echo ""
 	@echo "Running quick lint check..."

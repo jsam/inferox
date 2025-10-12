@@ -122,16 +122,9 @@ async fn test_bert_with_inferox_engine() {
     let model_name = model.name().to_string();
 
     println!("3. Registering model with engine...");
-    engine.register_model(model);
+    engine.register_model(&model_name, model, None);
 
-    println!(
-        "   Available models: {:?}",
-        engine
-            .list_models()
-            .into_iter()
-            .map(|(name, _)| name)
-            .collect::<Vec<_>>()
-    );
+    println!("   Available models: {:?}", engine.list_models());
 
     println!("4. Running inference through engine...");
     let backend = CandleBackend::cpu().expect("Failed to create backend");
@@ -142,7 +135,7 @@ async fn test_bert_with_inferox_engine() {
         .expect("Failed to create input tensor");
 
     let output = engine
-        .infer::<CandleBackend>(&model_name, input_tensor)
+        .infer_typed::<CandleBackend>(&model_name, input_tensor)
         .expect("Inference failed");
 
     println!("   Output shape: {:?}", output.shape());
