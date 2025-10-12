@@ -48,6 +48,139 @@ pub enum BackendType {
     TFLite,
 }
 
+/// Device wrapper that can hold device for any backend
+pub enum DeviceWrapper {
+    /// Candle device
+    Candle(candle_core::Device),
+    #[cfg(feature = "tch")]
+    /// Tch device
+    Tch(inferox_tch::TchBackend),
+}
+
+impl DeviceWrapper {
+    /// Get device type as string
+    pub fn device_type(&self) -> &str {
+        match self {
+            DeviceWrapper::Candle(device) => {
+                if device.is_cpu() {
+                    "cpu"
+                } else if device.is_cuda() {
+                    "cuda"
+                } else if device.is_metal() {
+                    "mps"
+                } else {
+                    "unknown"
+                }
+            }
+            #[cfg(feature = "tch")]
+            DeviceWrapper::Tch(_) => "tch",
+        }
+    }
+
+    /// Unwrap as Candle device
+    pub fn as_candle(self) -> Option<candle_core::Device> {
+        match self {
+            DeviceWrapper::Candle(device) => Some(device),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "tch")]
+    /// Unwrap as Tch backend (which includes device)
+    pub fn as_tch(self) -> Option<inferox_tch::TchBackend> {
+        match self {
+            DeviceWrapper::Tch(backend) => Some(backend),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+}
+
+/// Loaded model wrapper that can hold any backend type
+pub enum LoadedModel {
+    /// Candle backend model
+    Candle(
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_candle::CandleBackend,
+                Input = inferox_candle::CandleTensor,
+                Output = inferox_candle::CandleTensor,
+            >,
+        >,
+    ),
+    #[cfg(feature = "tch")]
+    /// Tch backend model
+    Tch(
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_tch::TchBackend,
+                Input = inferox_tch::TchTensor,
+                Output = inferox_tch::TchTensor,
+            >,
+        >,
+    ),
+}
+
+impl LoadedModel {
+    /// Get the model name
+    pub fn name(&self) -> &str {
+        match self {
+            LoadedModel::Candle(model) => model.name(),
+            #[cfg(feature = "tch")]
+            LoadedModel::Tch(model) => model.name(),
+        }
+    }
+
+    /// Get the backend type of this model
+    pub fn backend_type(&self) -> BackendType {
+        match self {
+            LoadedModel::Candle(_) => BackendType::Candle,
+            #[cfg(feature = "tch")]
+            LoadedModel::Tch(_) => BackendType::Tch,
+        }
+    }
+
+    /// Unwrap as Candle model
+    pub fn as_candle(
+        self,
+    ) -> Option<
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_candle::CandleBackend,
+                Input = inferox_candle::CandleTensor,
+                Output = inferox_candle::CandleTensor,
+            >,
+        >,
+    > {
+        match self {
+            LoadedModel::Candle(model) => Some(model),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "tch")]
+    /// Unwrap as Tch model
+    pub fn as_tch(
+        self,
+    ) -> Option<
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_tch::TchBackend,
+                Input = inferox_tch::TchTensor,
+                Output = inferox_tch::TchTensor,
+            >,
+        >,
+    > {
+        match self {
+            LoadedModel::Tch(model) => Some(model),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+}
+
 impl BackendType {
     /// Get the string representation of the backend type
     pub fn as_str(&self) -> &str {
@@ -86,6 +219,8 @@ pub struct ModelInfo {
     pub architecture_family: ArchitectureFamily,
     /// Supported backends for this model
     pub supported_backends: Vec<BackendType>,
+    /// Default device for model execution (e.g., "cpu", "cuda", "cuda:0", "mps")
+    pub device: Option<String>,
     /// Hidden size (for transformers)
     pub hidden_size: Option<usize>,
     /// Number of layers
@@ -190,6 +325,7 @@ fn create_model_info(repo_id: &str, config: &HFConfig) -> Result<ModelInfo> {
         repo_id: repo_id.to_string(),
         architecture_family: detect_architecture(config)?,
         supported_backends: vec![BackendType::Candle],
+        device: Some("cpu".to_string()), // Default device
         hidden_size: config.hidden_size,
         num_layers: config.num_hidden_layers,
         vocab_size: config.vocab_size,
@@ -401,11 +537,11 @@ impl PackageManager {
         })
     }
 
-    /// Load model from compiled library in package
-    pub fn load_model(
+    /// Load Candle model from compiled library in package
+    /// Backend type is automatically determined from package.info.supported_backends[0]
+    fn load_model_candle_internal(
         &self,
         package: &ModelPackage,
-        backend_type: BackendType,
     ) -> Result<
         Box<
             dyn inferox_core::Model<
@@ -415,6 +551,11 @@ impl PackageManager {
             >,
         >,
     > {
+        let backend_type =
+            package.info.supported_backends.first().ok_or_else(|| {
+                Error::InvalidFormat("No supported backends in package".to_string())
+            })?;
+
         let backend_dir = package.path.join("backends").join(backend_type.as_str());
 
         #[cfg(target_os = "macos")]
@@ -461,10 +602,11 @@ impl PackageManager {
     }
 
     #[cfg(feature = "tch")]
-    pub fn load_model_tch(
+    /// Load Tch model from compiled library in package
+    /// Backend type is automatically determined from package.info.supported_backends[0]
+    fn load_model_tch_internal(
         &self,
         package: &ModelPackage,
-        backend_type: BackendType,
     ) -> Result<
         Box<
             dyn inferox_core::Model<
@@ -474,6 +616,11 @@ impl PackageManager {
             >,
         >,
     > {
+        let backend_type =
+            package.info.supported_backends.first().ok_or_else(|| {
+                Error::InvalidFormat("No supported backends in package".to_string())
+            })?;
+
         let backend_dir = package.path.join("backends").join(backend_type.as_str());
 
         #[cfg(target_os = "macos")]
@@ -517,6 +664,116 @@ impl PackageManager {
 
             Ok(model)
         }
+    }
+
+    /// Load model from compiled library in package
+    /// Backend type and device are automatically determined from model.toml
+    ///
+    /// Returns a tuple of (LoadedModel, DeviceWrapper) where both are determined from package metadata
+    pub fn load_model(&self, package: &ModelPackage) -> Result<(LoadedModel, DeviceWrapper)> {
+        let backend_type =
+            package.info.supported_backends.first().ok_or_else(|| {
+                Error::InvalidFormat("No supported backends in package".to_string())
+            })?;
+
+        let device_str = package.info.device.as_deref().unwrap_or("cpu");
+
+        match backend_type {
+            BackendType::Candle => {
+                // Parse device for Candle
+                let device = if device_str.starts_with("cuda") {
+                    if let Some(idx_str) = device_str.strip_prefix("cuda:") {
+                        let idx: usize = idx_str.parse().map_err(|_| {
+                            Error::InvalidFormat(format!("Invalid CUDA device: {}", device_str))
+                        })?;
+                        candle_core::Device::new_cuda(idx).map_err(|e| {
+                            Error::Generic(format!("Failed to create CUDA device: {}", e))
+                        })?
+                    } else {
+                        candle_core::Device::new_cuda(0).map_err(|e| {
+                            Error::Generic(format!("Failed to create CUDA device: {}", e))
+                        })?
+                    }
+                } else if device_str == "mps" || device_str == "metal" {
+                    candle_core::Device::new_metal(0).map_err(|e| {
+                        Error::Generic(format!("Failed to create Metal device: {}", e))
+                    })?
+                } else {
+                    candle_core::Device::Cpu
+                };
+
+                let model = self.load_model_candle_internal(package)?;
+                Ok((LoadedModel::Candle(model), DeviceWrapper::Candle(device)))
+            }
+            #[cfg(feature = "tch")]
+            BackendType::Tch => {
+                // Parse device for Tch and create backend
+                let backend = if device_str.starts_with("cuda") {
+                    if let Some(idx_str) = device_str.strip_prefix("cuda:") {
+                        let idx: usize = idx_str.parse().map_err(|_| {
+                            Error::InvalidFormat(format!("Invalid CUDA device: {}", device_str))
+                        })?;
+                        inferox_tch::TchBackend::cuda(idx).map_err(|e| {
+                            Error::Generic(format!("Failed to create CUDA backend: {}", e))
+                        })?
+                    } else {
+                        inferox_tch::TchBackend::cuda(0).map_err(|e| {
+                            Error::Generic(format!("Failed to create CUDA backend: {}", e))
+                        })?
+                    }
+                } else {
+                    inferox_tch::TchBackend::cpu().map_err(|e| {
+                        Error::Generic(format!("Failed to create CPU backend: {}", e))
+                    })?
+                };
+
+                let model = self.load_model_tch_internal(package)?;
+                Ok((LoadedModel::Tch(model), DeviceWrapper::Tch(backend)))
+            }
+            #[cfg(not(feature = "tch"))]
+            BackendType::Tch => Err(Error::Generic(
+                "Tch backend not enabled. Compile with --features tch".to_string(),
+            )),
+            _ => Err(Error::Generic(format!(
+                "Backend {:?} not supported yet",
+                backend_type
+            ))),
+        }
+    }
+
+    /// Load model from compiled library in package and unwrap as Candle model
+    /// Backend type is automatically determined from package.info.supported_backends
+    pub fn load_model_candle(
+        &self,
+        package: &ModelPackage,
+    ) -> Result<
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_candle::CandleBackend,
+                Input = inferox_candle::CandleTensor,
+                Output = inferox_candle::CandleTensor,
+            >,
+        >,
+    > {
+        self.load_model_candle_internal(package)
+    }
+
+    #[cfg(feature = "tch")]
+    /// Load model from compiled library in package and unwrap as Tch model
+    /// Backend type is automatically determined from package.info.supported_backends[0]
+    pub fn load_model_tch(
+        &self,
+        package: &ModelPackage,
+    ) -> Result<
+        Box<
+            dyn inferox_core::Model<
+                Backend = inferox_tch::TchBackend,
+                Input = inferox_tch::TchTensor,
+                Output = inferox_tch::TchTensor,
+            >,
+        >,
+    > {
+        self.load_model_tch_internal(package)
     }
 }
 

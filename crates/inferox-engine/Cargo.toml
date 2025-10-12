@@ -9,7 +9,13 @@ description = "Inference engine for Inferox"
 
 [dependencies]
 inferox-core = { version = "0.1.0", path = "../inferox-core" }
+inferox-candle = { version = "0.1.0", path = "../inferox-candle" }
+inferox-tch = { version = "0.1.0", path = "../inferox-tch", optional = true }
 thiserror.workspace = true
+
+[features]
+default = []
+tch = ["inferox-tch"]
 
 [dev-dependencies]
 inferox-candle = { version = "0.1.0", path = "../inferox-candle" }

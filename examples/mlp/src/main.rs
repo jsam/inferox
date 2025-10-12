@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Created CPU backend");
 
     let config = EngineConfig::default();
-    let mut engine = InferoxEngine::new(backend.clone(), config);
+    let mut engine = InferoxEngine::new(config);
 
     for model_path in &args[1..] {
         println!("\nLoading model from: {}", model_path);
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let model_name = model.name().to_string();
         let metadata = model.metadata();
 
-        engine.register_boxed_model(model);
+        engine.register_model(model);
         println!("✓ Registered '{}' - {}", model_name, metadata.description);
     }
 
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .tensor_builder()
             .build_from_vec(input_data, &[1, input_size])?;
 
-        let output = engine.infer(name, input)?;
+        let output = engine.infer::<CandleBackend>(name, input)?;
         println!("  {} -> output shape: {:?}", name, output.shape());
     }
 

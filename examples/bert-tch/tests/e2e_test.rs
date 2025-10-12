@@ -1,5 +1,5 @@
 use inferox_core::{Backend, Tensor, TensorBuilder};
-use inferox_mlpkg::{BackendType, PackageManager};
+use inferox_mlpkg::PackageManager;
 use inferox_tch::{TchBackend, TchTensor};
 use std::path::PathBuf;
 
@@ -41,9 +41,11 @@ async fn test_bert_tch_package_end_to_end() {
     );
 
     println!("2. Loading model with libloading...");
-    let model = manager
-        .load_model_tch(&package, BackendType::Tch)
+    let (model, _device) = manager
+        .load_model(&package)
         .expect("Failed to load model");
+    
+    let model = model.as_tch().expect("Expected Tch model");
 
     println!("   Model name: {}", model.name());
     println!("   Model metadata: {:?}", model.metadata());
@@ -101,9 +103,8 @@ async fn test_bert_tch_with_inferox_engine() {
     }
 
     println!("1. Setting up Inferox Engine...");
-    let backend = TchBackend::cpu().expect("Failed to create backend");
     let config = EngineConfig::default();
-    let mut engine = InferoxEngine::new(backend.clone(), config);
+    let mut engine = InferoxEngine::new(config);
 
     let cache_dir = std::env::temp_dir().join("inferox-test-cache");
     println!("Cache directory: {:?}", cache_dir);
@@ -122,20 +123,22 @@ async fn test_bert_tch_with_inferox_engine() {
         package.info.supported_backends
     );
 
-    let model = manager
-        .load_model_tch(&package, BackendType::Tch)
+    let (model, _device) = manager
+        .load_model(&package)
         .expect("Failed to load model");
-
+    
+    let model = model.as_tch().expect("Expected Tch model");
     let model_name = model.name().to_string();
 
     println!("3. Registering model with engine...");
-    engine.register_boxed_model(model);
+    engine.register_model(model);
 
     println!("   Input shape: {:?}", [1, 6]);
     let input_ids: Vec<i64> = vec![101, 2023, 2003, 1037, 3231, 102];
     println!("   Input IDs: {:?}", input_ids);
 
     println!("4. Running inference through engine...");
+    let backend = TchBackend::cpu().expect("Failed to create backend");
     let input_tensor = backend
         .tensor_builder()
         .build_from_vec(input_ids.clone(), &[1, input_ids.len()])
@@ -151,7 +154,7 @@ async fn test_bert_tch_with_inferox_engine() {
     );
 
     let output = engine
-        .infer(&model_name, input_tensor)
+        .infer::<TchBackend>(&model_name, input_tensor)
         .expect("Inference failed");
 
     println!("   Output shape: {:?}", output.shape());

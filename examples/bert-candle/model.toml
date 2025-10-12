@@ -1,3 +1,4 @@
 # Model configuration for bert-candle
 repo_id = "bert-base-uncased"
 backend = "candle"
+device = "cpu"  # Options: "cpu", "cuda", "mps"

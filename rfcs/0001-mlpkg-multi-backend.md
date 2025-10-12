@@ -240,12 +240,12 @@ impl ModelPackageManager {
         revision: Option<&str>,
     ) -> Result<ModelPackage>;
     
-    /// Load model for specific backend by loading static library
-    pub fn load_model<B: Backend>(
+    /// Load model by loading static library
+    /// Backend is automatically determined from package.info.supported_backends[0]
+    pub fn load_model(
         &self,
         package: &ModelPackage,
-        backend: &B,
-    ) -> Result<BoxedModel<B>>;
+    ) -> Result<BoxedModel>;
 }
 ```
 
@@ -652,9 +652,8 @@ pm.install_model_library(
     &PathBuf::from("target/release/libbert_candle.so"),
 )?;
 
-// Step 5: Load model (loads static library)
-let backend = CandleBackend::new(Device::Cpu)?;
-let model = pm.load_model(&package, &backend)?;
+// Step 5: Load model (loads static library, backend determined from package metadata)
+let model = pm.load_model(&package)?;
 
 // Step 6: Use with engine
 let mut engine = InferoxEngine::new(backend, EngineConfig::default());
@@ -684,13 +683,11 @@ pm.install_model_library(
     &PathBuf::from("target/release/libbert_candle.so"),
 )?;
 
-// Load with Candle
-let candle_backend = CandleBackend::new(Device::Cpu)?;
-let candle_model = pm.load_model(&package, &candle_backend)?;
+// Load with Candle (backend determined from package metadata)
+let candle_model = pm.load_model(&package)?;
 
-// Load with Torch (when implemented)
-let torch_backend = TorchBackend::new(tch::Device::Cpu)?;
-let torch_model = pm.load_model(&package, &torch_backend)?;
+// For multi-backend, you would create separate packages with different supported_backends
+// and call load_model on each package
 ```
 
 ---
@@ -876,9 +873,8 @@ async fn test_bert_end_to_end() {
         &PathBuf::from("target/release/libbert_candle.so"),
     )?;
     
-    // Step 4: Load model
-    let backend = CandleBackend::new(Device::Cpu)?;
-    let model = pm.load_model(&package, &backend)?;
+    // Step 4: Load model (backend determined from package metadata)
+    let model = pm.load_model(&package)?;
     
     // Step 5: Test inference
     let input = create_dummy_input();

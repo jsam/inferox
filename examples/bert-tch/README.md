@@ -119,8 +119,9 @@ let backend = TchBackend::cpu()?;
 let manager = PackageManager::new(cache_dir)?;
 let package = manager.load_package(&package_path)?;
 
-// Load model
-let model = manager.load_model(&package, BackendType::Tch)?;
+// Load model (backend determined from model.toml)
+let loaded_model = manager.load_model(&package)?;
+let model = loaded_model.as_tch().expect("Expected Tch model");
 
 // Run inference
 let input_ids = vec![101, 2023, 2003, 1037, 3231, 102];  // [CLS] this is a test [SEP]

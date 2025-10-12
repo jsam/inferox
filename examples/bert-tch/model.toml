@@ -2,3 +2,4 @@
 name = "bert-tch"
 repo_id = "bert-base-uncased"
 backend = "Tch"
+device = "cpu"  # Options: "cpu", "cuda:0", "cuda:1", "mps"

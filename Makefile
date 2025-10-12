@@ -144,48 +144,57 @@ test-engine:
 	@echo "Running engine tests..."
 	cargo test -p inferox-engine
 
-test-examples:
-	@echo "Running example tests..."
-	cargo test -p mlp
-	
-test-all-examples:
-	@echo "Building and testing all examples..."
+test-examples: test-mlp test-bert-candle test-bert-tch
 	@echo ""
-	@echo "1. Building MLP example models..."
+	@echo "✅ All examples tested successfully!"
+
+test-all-examples: test-examples
+
+test-mlp:
+	@echo "=== Testing MLP Example ==="
+	@echo ""
+	@echo "1. Building MLP model libraries..."
 	@cargo build --release -p mlp-classifier -p mlp-small || (echo "❌ MLP models build failed!" && exit 1)
 	@echo "✅ MLP models built"
 	@echo ""
-	@echo "2. Testing MLP example..."
-	@cargo test -p mlp || (echo "❌ MLP tests failed!" && exit 1)
-	@echo "✅ MLP tests passed"
+	@echo "2. Running MLP unit tests..."
+	@cargo test -p mlp --lib || (echo "❌ MLP unit tests failed!" && exit 1)
+	@echo "✅ MLP unit tests passed"
 	@echo ""
-	@echo "3. Building BERT-Candle library..."
+	@echo "3. Running MLP e2e tests (including engine integration)..."
+	@cargo test -p mlp --test e2e_test -- --ignored || (echo "❌ MLP e2e tests failed!" && exit 1)
+	@echo "✅ MLP e2e tests passed"
+
+test-bert-candle:
+	@echo ""
+	@echo "=== Testing BERT-Candle Example ==="
+	@echo ""
+	@echo "1. Building BERT-Candle library..."
 	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle library build failed!" && exit 1)
 	@echo "✅ BERT-Candle library built"
 	@echo ""
-	@echo "4. Assembling BERT-Candle package..."
+	@echo "2. Assembling BERT-Candle package..."
 	@touch examples/bert-candle/build.rs
 	@cargo build --release -p bert-candle || (echo "❌ BERT-Candle package assembly failed!" && exit 1)
 	@echo "✅ BERT-Candle package assembled"
 	@echo ""
-	@echo "5. Verifying package exists..."
+	@echo "3. Verifying package exists..."
 	@if [ ! -d "target/mlpkg/bert-candle" ]; then \
 		echo "❌ Package directory not found at target/mlpkg/bert-candle"; \
 		exit 1; \
 	fi
 	@echo "✅ Package verified at target/mlpkg/bert-candle"
 	@echo ""
-	@echo "6. Testing BERT-Candle example (including e2e tests)..."
+	@echo "4. Running BERT-Candle tests (including e2e)..."
 	@cargo test -p bert-candle || (echo "❌ BERT-Candle unit tests failed!" && exit 1)
 	@cargo test --test e2e_test -p bert-candle -- --ignored --nocapture || (echo "❌ BERT-Candle e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Candle tests passed"
-	@echo ""
-	@echo "✅ All examples built and tested successfully!"
 
 test-bert-tch:
-	@echo "Building and testing BERT-Tch example (requires LibTorch)..."
 	@echo ""
-	@echo "ℹ️  Checking for PyTorch installation..."
+	@echo "=== Testing BERT-Tch Example (requires LibTorch) ==="
+	@echo ""
+	@echo "Checking for PyTorch installation..."
 	@python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" 2>/dev/null || \
 		(echo "❌ PyTorch not found! Install with: pip3 install torch==2.4.0" && exit 1)
 	@echo ""
@@ -215,8 +224,6 @@ test-bert-tch:
 		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
 		cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ BERT-Tch e2e tests failed!" && exit 1)
 	@echo "✅ BERT-Tch tests passed"
-	@echo ""
-	@echo "✅ BERT-Tch example built and tested successfully!"
 
 lint-quick:
 	@echo ""
