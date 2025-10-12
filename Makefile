@@ -23,8 +23,7 @@ help:
 	@echo "  test-core         - Run core library tests only"
 	@echo "  test-candle       - Run Candle backend tests only"
 	@echo "  test-engine       - Run engine tests only"
-	@echo "  test-examples     - Run example tests"
-	@echo "  test-all-examples - Build and test ALL examples (MLP + BERT with package assembly)"
+	@echo "  test-examples     - Build and test ALL examples (MLP + BERT with package assembly)"
 	@echo "  test-bert-tch     - Build and test BERT-Tch example (requires LibTorch)"
 	@echo ""
 	@echo "Development:"
@@ -148,8 +147,6 @@ test-examples: test-mlp test-bert-candle test-bert-tch
 	@echo ""
 	@echo "✅ All examples tested successfully!"
 
-test-all-examples: test-examples
-
 test-mlp:
 	@echo "=== Testing MLP Example ==="
 	@echo ""
@@ -195,8 +192,11 @@ test-bert-tch:
 	@echo "=== Testing BERT-Tch Example (requires LibTorch) ==="
 	@echo ""
 	@echo "Checking for PyTorch installation..."
-	@python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" 2>/dev/null || \
-		(echo "❌ PyTorch not found! Install with: pip3 install torch==2.4.0" && exit 1)
+	@if ! python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" 2>/dev/null; then \
+		echo "⚠️  PyTorch not found - skipping BERT-Tch tests"; \
+		echo "   To run these tests, install PyTorch: pip3 install torch==2.4.0"; \
+		exit 0; \
+	fi
 	@echo ""
 	@echo "1. Building BERT-Tch library..."
 	@cd examples/bert-tch && LIBTORCH_USE_PYTORCH=1 cargo build --release || (echo "❌ BERT-Tch library build failed!" && exit 1)

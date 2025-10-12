@@ -192,7 +192,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-examples-
     
     - name: Build and test all examples
-      run: make test-all-examples
+      run: make test-examples
     
     - name: Upload test artifacts (if failed)
       if: failure()
