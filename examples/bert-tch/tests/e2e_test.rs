@@ -1,6 +1,6 @@
 use inferox_core::{Backend, Tensor, TensorBuilder};
 use inferox_mlpkg::PackageManager;
-use inferox_tch::{TchBackend, TchTensor};
+use inferox_tch::TchBackend;
 use std::path::PathBuf;
 
 #[tokio::test]
@@ -144,17 +144,10 @@ async fn test_bert_tch_with_inferox_engine() {
         .build_from_vec(input_ids.clone(), &[1, input_ids.len()])
         .expect("Failed to create input tensor");
 
-    println!(
-        "   Available models: {:?}",
-        engine
-            .list_models()
-            .into_iter()
-            .map(|(name, _)| name)
-            .collect::<Vec<_>>()
-    );
+    println!("   Available models: {:?}", engine.list_models());
 
     let output = engine
-        .infer::<TchBackend>(&model_name, input_tensor)
+        .infer_typed::<TchBackend>(&model_name, input_tensor)
         .expect("Inference failed");
 
     println!("   Output shape: {:?}", output.shape());

@@ -1,11 +1,11 @@
 use inferox_core::{Model, ModelMetadata};
 use inferox_tch::{TchBackend, TchTensor};
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use tch::{nn, Device, Kind, Tensor};
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct BertConfig {
     hidden_size: i64,
     num_hidden_layers: i64,
@@ -37,7 +37,7 @@ impl BertModelWrapper {
         let config_str = std::fs::read_to_string(&config_path)?;
         let config: BertConfig = serde_json::from_str(&config_str)?;
 
-        let mut vs = nn::VarStore::new(device);
+        let vs = nn::VarStore::new(device);
 
         let weights_data = std::fs::read(&weights_path)?;
         let tensors = safetensors::SafeTensors::deserialize(&weights_data)?;
@@ -301,6 +301,7 @@ impl Model for BertModelWrapper {
     }
 }
 
+#[allow(dead_code)]
 fn map_weight_name(name: &str) -> String {
     name.to_string()
 }

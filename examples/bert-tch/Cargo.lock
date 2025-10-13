@@ -1127,6 +1127,7 @@ dependencies = [
 name = "inferox-core"
 version = "0.1.1"
 dependencies = [
+ "serde",
  "thiserror",
 ]
 
@@ -1134,6 +1135,7 @@ dependencies = [
 name = "inferox-engine"
 version = "0.1.1"
 dependencies = [
+ "candle-core",
  "inferox-candle",
  "inferox-core",
  "thiserror",
