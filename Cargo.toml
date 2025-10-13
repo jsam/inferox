@@ -11,6 +11,12 @@ members = [
     "examples/mlp/models/small",
     "examples/bert-candle",
 ]
+exclude = [
+    "crates/inferox-tch",
+    "examples/bert-tch",
+    "examples/bert-multi-backend",
+    "examples/doclayout-yolo",
+]
 
 
 [workspace.package]
@@ -22,8 +28,10 @@ repository = "https://github.com/yourusername/inferox"
 
 [workspace.dependencies]
 thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 candle-core = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-nn = { git = "https://github.com/huggingface/candle", branch = "main" }
 candle-transformers = { git = "https://github.com/huggingface/candle", branch = "main" }
+tch = "0.17"
 
 

@@ -1,4 +1,4 @@
-use crate::InferoxEngine;
+use crate::{DynError, InferoxEngine};
 use inferox_core::{Backend, InferoxError};
 use std::any::Any;
 use std::collections::HashMap;
@@ -10,14 +10,14 @@ pub struct SessionContext {
     pub cache: HashMap<String, Box<dyn Any + Send + Sync>>,
 }
 
-pub struct InferenceSession<B: Backend> {
-    engine: Arc<InferoxEngine<B>>,
+pub struct InferenceSession {
+    engine: Arc<InferoxEngine>,
     model_name: String,
     context: SessionContext,
 }
 
-impl<B: Backend> InferenceSession<B> {
-    pub fn new(engine: Arc<InferoxEngine<B>>, model_name: String) -> Self {
+impl InferenceSession {
+    pub fn new(engine: Arc<InferoxEngine>, model_name: String) -> Self {
         Self {
             engine,
             model_name,
@@ -29,8 +29,14 @@ impl<B: Backend> InferenceSession<B> {
         }
     }
 
-    pub fn run(&mut self, input: B::Tensor) -> Result<B::Tensor, InferoxError<B::Error>> {
-        self.engine.infer(&self.model_name, input)
+    pub fn run<B: Backend + 'static>(
+        &mut self,
+        input: B::Tensor,
+    ) -> Result<B::Tensor, InferoxError<DynError>>
+    where
+        B::Tensor: 'static,
+    {
+        self.engine.infer_typed::<B>(&self.model_name, input)
     }
 
     pub fn set_batch_size(&mut self, batch_size: usize) {
@@ -76,14 +82,14 @@ mod tests {
 
     #[test]
     fn test_session_new() {
-        let backend = CandleBackend::cpu().unwrap();
         let config = crate::EngineConfig::default();
-        let mut engine = InferoxEngine::new(backend, config);
+        let mut engine = InferoxEngine::new(config);
 
-        let model = DummyModel {
-            name: "test".to_string(),
-        };
-        engine.register_model(model);
+        let model: Box<dyn Model<Backend = CandleBackend, Input = _, Output = _>> =
+            Box::new(DummyModel {
+                name: "test".to_string(),
+            });
+        engine.register_model("test", model, None);
 
         let engine_arc = Arc::new(engine);
         let session = InferenceSession::new(engine_arc, "test".to_string());
@@ -96,12 +102,13 @@ mod tests {
     fn test_session_run() {
         let backend = CandleBackend::cpu().unwrap();
         let config = crate::EngineConfig::default();
-        let mut engine = InferoxEngine::new(backend.clone(), config);
+        let mut engine = InferoxEngine::new(config);
 
-        let model = DummyModel {
-            name: "test".to_string(),
-        };
-        engine.register_model(model);
+        let model: Box<dyn Model<Backend = CandleBackend, Input = _, Output = _>> =
+            Box::new(DummyModel {
+                name: "test".to_string(),
+            });
+        engine.register_model("test", model, None);
 
         let engine_arc = Arc::new(engine);
         let mut session = InferenceSession::new(engine_arc, "test".to_string());
@@ -111,15 +118,14 @@ mod tests {
             .build_from_vec(vec![1.0f32, 2.0, 3.0], &[1, 3])
             .unwrap();
 
-        let output = session.run(input).unwrap();
+        let output = session.run::<CandleBackend>(input).unwrap();
         assert_eq!(output.shape(), &[1, 3]);
     }
 
     #[test]
     fn test_session_set_batch_size() {
-        let backend = CandleBackend::cpu().unwrap();
         let config = crate::EngineConfig::default();
-        let engine = InferoxEngine::new(backend, config);
+        let engine = InferoxEngine::new(config);
         let engine_arc = Arc::new(engine);
         let mut session = InferenceSession::new(engine_arc, "test".to_string());
 
@@ -129,9 +135,8 @@ mod tests {
 
     #[test]
     fn test_session_state_storage() {
-        let backend = CandleBackend::cpu().unwrap();
         let config = crate::EngineConfig::default();
-        let engine = InferoxEngine::new(backend, config);
+        let engine = InferoxEngine::new(config);
         let engine_arc = Arc::new(engine);
         let mut session = InferenceSession::new(engine_arc, "test".to_string());
 
@@ -142,9 +147,8 @@ mod tests {
 
     #[test]
     fn test_session_state_retrieval_wrong_type() {
-        let backend = CandleBackend::cpu().unwrap();
         let config = crate::EngineConfig::default();
-        let engine = InferoxEngine::new(backend, config);
+        let engine = InferoxEngine::new(config);
         let engine_arc = Arc::new(engine);
         let mut session = InferenceSession::new(engine_arc, "test".to_string());
 

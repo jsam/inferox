@@ -55,3 +55,66 @@ pub trait SaveLoadModel: Model {
 
     fn load(&mut self, path: &Path) -> Result<(), <Self::Backend as Backend>::Error>;
 }
+
+use std::any::Any;
+
+pub trait AnyModel: Send + Sync {
+    fn name(&self) -> &str;
+    fn metadata(&self) -> ModelMetadata;
+    fn forward_any(
+        &self,
+        input: Box<dyn Any>,
+    ) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>>;
+    fn backend_name(&self) -> &str;
+    fn as_any(&self) -> &dyn Any;
+}
+
+pub struct TypeErasedModel<B: Backend + 'static> {
+    inner: Box<dyn Model<Backend = B, Input = B::Tensor, Output = B::Tensor>>,
+}
+
+impl<B: Backend + 'static> TypeErasedModel<B>
+where
+    B::Tensor: 'static,
+{
+    pub fn new(model: Box<dyn Model<Backend = B, Input = B::Tensor, Output = B::Tensor>>) -> Self {
+        Self { inner: model }
+    }
+}
+
+impl<B: Backend + 'static> AnyModel for TypeErasedModel<B>
+where
+    B::Tensor: 'static,
+{
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn metadata(&self) -> ModelMetadata {
+        self.inner.metadata()
+    }
+
+    fn forward_any(
+        &self,
+        input: Box<dyn Any>,
+    ) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>> {
+        let typed_input = input
+            .downcast::<B::Tensor>()
+            .map_err(|_| "Input type mismatch")?;
+
+        let output = self
+            .inner
+            .forward(*typed_input)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+
+        Ok(Box::new(output))
+    }
+
+    fn backend_name(&self) -> &str {
+        std::any::type_name::<B>()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}

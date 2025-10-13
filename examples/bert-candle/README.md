@@ -56,8 +56,9 @@ let manager = PackageManager::new(cache_dir)?;
 let package_path = PathBuf::from("target/mlpkg/bert-candle");
 let package = manager.load_package(&package_path)?;
 
-// Load model for inference
-let model = manager.load_model(&package, BackendType::Candle)?;
+// Load model (backend determined from model.toml)
+let loaded_model = manager.load_model(&package)?;
+let model = loaded_model.as_candle().expect("Expected Candle model");
 let output = model.forward(input)?;
 ```
 

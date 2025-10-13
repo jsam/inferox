@@ -101,7 +101,7 @@ jobs:
       run: make ci-test
     
     - name: Run doctests
-      run: cargo test --doc
+      run: cargo test --workspace --doc
 
   # Build model libraries
   models:
@@ -162,7 +162,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-doc-
     
     - name: Build documentation
-      run: cargo doc --no-deps
+      run: cargo doc --workspace --no-deps
       env:
         RUSTDOCFLAGS: -D warnings
 
@@ -176,6 +176,11 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install PyTorch (for BERT-Tch tests)
+      run: |
+        pip3 install torch==2.4.0 --index-url https://download.pytorch.org/whl/cpu
+        python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
     
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -192,7 +197,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cargo-examples-
     
     - name: Build and test all examples
-      run: make test-all-examples
+      run: make test-examples
     
     - name: Upload test artifacts (if failed)
       if: failure()

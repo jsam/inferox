@@ -17,6 +17,11 @@ hf-xet-rs = { path = "../hf-xet-rs" }
 libloading = "0.8"
 inferox-core = { path = "../inferox-core" }
 inferox-candle = { path = "../inferox-candle" }
+candle-core.workspace = true
+inferox-tch = { path = "../inferox-tch", optional = true }
+
+[features]
+tch = ["inferox-tch"]
 
 [dev-dependencies]
 tempfile = "3.8"

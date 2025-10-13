@@ -1,6 +1,6 @@
 use inferox_candle::CandleBackend;
 use inferox_core::{Backend, Tensor, TensorBuilder};
-use inferox_mlpkg::{BackendType, PackageManager};
+use inferox_mlpkg::PackageManager;
 use std::path::PathBuf;
 
 #[tokio::test]
@@ -41,15 +41,17 @@ async fn test_bert_package_end_to_end() {
     );
 
     println!("2. Loading model with libloading...");
-    let model = manager
-        .load_model(&package, BackendType::Candle)
-        .expect("Failed to load model");
+    let (loaded_model, device) = manager.load_model(&package).expect("Failed to load model");
+
+    let model = loaded_model.as_candle().expect("Expected Candle model");
+    let candle_device = device.as_candle().expect("Expected Candle device");
 
     println!("   Model name: {}", model.name());
     println!("   Model metadata: {:?}", model.metadata());
+    println!("   Device: {:?}", candle_device);
 
     println!("3. Creating backend and test input...");
-    let backend = CandleBackend::cpu().expect("Failed to create backend");
+    let backend = CandleBackend::with_device(candle_device.clone());
 
     let input_ids: Vec<i64> = vec![101, 2023, 2003, 1037, 3231, 102];
     let input_tensor = backend
@@ -101,9 +103,8 @@ async fn test_bert_with_inferox_engine() {
     }
 
     println!("1. Setting up Inferox Engine...");
-    let backend = CandleBackend::cpu().expect("Failed to create backend");
     let config = EngineConfig::default();
-    let mut engine = InferoxEngine::new(backend.clone(), config);
+    let mut engine = InferoxEngine::new(config);
 
     let cache_dir = std::env::temp_dir().join("inferox-test-cache");
     println!("Cache directory: {:?}", cache_dir);
@@ -115,25 +116,18 @@ async fn test_bert_with_inferox_engine() {
         .load_package(&package_path)
         .expect("Failed to load package");
 
-    let model = manager
-        .load_model(&package, BackendType::Candle)
-        .expect("Failed to load model");
+    let (model, _device) = manager.load_model(&package).expect("Failed to load model");
 
+    let model = model.as_candle().expect("Expected Candle model");
     let model_name = model.name().to_string();
 
     println!("3. Registering model with engine...");
-    engine.register_boxed_model(model);
+    engine.register_model(&model_name, model, None);
 
-    println!(
-        "   Available models: {:?}",
-        engine
-            .list_models()
-            .into_iter()
-            .map(|(name, _)| name)
-            .collect::<Vec<_>>()
-    );
+    println!("   Available models: {:?}", engine.list_models());
 
     println!("4. Running inference through engine...");
+    let backend = CandleBackend::cpu().expect("Failed to create backend");
     let input_ids: Vec<i64> = vec![101, 7592, 1010, 2088, 999, 102];
     let input_tensor = backend
         .tensor_builder()
@@ -141,7 +135,7 @@ async fn test_bert_with_inferox_engine() {
         .expect("Failed to create input tensor");
 
     let output = engine
-        .infer(&model_name, input_tensor)
+        .infer_typed::<CandleBackend>(&model_name, input_tensor)
         .expect("Inference failed");
 
     println!("   Output shape: {:?}", output.shape());

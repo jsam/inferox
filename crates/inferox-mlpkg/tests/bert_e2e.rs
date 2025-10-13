@@ -56,9 +56,9 @@ async fn test_bert_end_to_end() {
         .expect("Failed to install library");
 
     println!("5. Loading model using libloading...");
-    let model = manager
-        .load_model(&package, BackendType::Candle)
-        .expect("Failed to load model");
+    let (model, _device) = manager.load_model(&package).expect("Failed to load model");
+
+    let model = model.as_candle().expect("Expected Candle model");
 
     println!("   Model name: {}", model.name());
     println!("   Model metadata: {:?}", model.metadata());
