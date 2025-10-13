@@ -15,6 +15,7 @@ exclude = [
     "crates/inferox-tch",
     "examples/bert-tch",
     "examples/bert-multi-backend",
+    "examples/doclayout-yolo",
 ]
 
 

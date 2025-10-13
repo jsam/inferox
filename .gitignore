@@ -38,3 +38,4 @@ examples/bert-tch/target/
 examples/bert-tch/mlpkg/
 examples/bert-tch/examples/
 examples/bert-multi-backend/target
+examples/doclayout-yolo/target

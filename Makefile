@@ -143,7 +143,7 @@ test-engine:
 	@echo "Running engine tests..."
 	cargo test -p inferox-engine
 
-test-examples: test-mlp test-bert-candle test-bert-tch
+test-examples: test-mlp test-bert-candle test-bert-tch test-doclayout-yolo
 	@echo ""
 	@echo "✅ All examples tested successfully!"
 
@@ -247,6 +247,39 @@ test-bert-multi-backend:
 		cargo test -- --ignored --nocapture || (echo "❌ Multi-backend tests failed!" && exit 1)
 	@echo ""
 	@echo "✅ Multi-backend BERT tests passed!"
+
+test-doclayout-yolo:
+	@echo "=== Testing DocLayout-YOLO Example (requires LibTorch) ==="
+	@echo ""
+	@echo "Checking for PyTorch installation..."
+	@python3 -c "import torch; print(f'Found PyTorch {torch.__version__}')" || (echo "❌ PyTorch not found! Install with: pip install torch doclayout-yolo" && exit 1)
+	@echo ""
+	@echo "1. Checking for TorchScript model..."
+	@if [ ! -f "examples/doclayout-yolo/models/doclayout_yolo_docstructbench_imgsz1280_2501_torchscript.pt" ]; then \
+		echo "❌ TorchScript model not found!"; \
+		echo "   Please run: cd examples/doclayout-yolo/models && python download_latest_model.py && python export_torchscript.py"; \
+		exit 1; \
+	fi
+	@echo "✓ TorchScript model found (imgsz1280-2501)"
+	@echo ""
+	@echo "2. Running DocLayout-YOLO E2E tests..."
+	@cd examples/doclayout-yolo && \
+		LIBTORCH_USE_PYTORCH=1 \
+		LIBTORCH_BYPASS_VERSION_CHECK=1 \
+		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		LD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$LD_LIBRARY_PATH \
+		cargo test --test e2e_test -- --ignored --nocapture || (echo "❌ DocLayout-YOLO E2E tests failed!" && exit 1)
+	@echo "✅ DocLayout-YOLO E2E tests passed"
+	@echo ""
+	@echo "3. Running DocLayout-YOLO Visual tests (generates output images)..."
+	@cd examples/doclayout-yolo && \
+		LIBTORCH_USE_PYTORCH=1 \
+		LIBTORCH_BYPASS_VERSION_CHECK=1 \
+		DYLD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$DYLD_LIBRARY_PATH \
+		LD_LIBRARY_PATH="$$(python3 -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')":$$LD_LIBRARY_PATH \
+		cargo test --test visual_e2e_test -- --ignored --nocapture || (echo "❌ DocLayout-YOLO Visual tests failed!" && exit 1)
+	@echo "✅ DocLayout-YOLO Visual tests passed"
+	@echo "   Output images saved to: examples/doclayout-yolo/samples/outputs/"
 
 lint-quick:
 	@echo ""
